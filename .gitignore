@@ -1,0 +1,25 @@
+# ─── secrets ───────────────────────────────────────────────
+# The repo may go public. History must be clean, not just HEAD.
+.env
+.env.*
+!.env.example
+
+# ─── data ──────────────────────────────────────────────────
+# Downloaded benchmarks, cached model answers and generated training sets are
+# reproducible from `python -m koottam prepare` / `eval` / `build`, and some source
+# datasets are non-commercial licensed: never redistribute them from this repo.
+data/*
+!data/.gitkeep
+results.csv
+*.gguf
+train/outputs/
+
+# ─── python ────────────────────────────────────────────────
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.ipynb_checkpoints/
