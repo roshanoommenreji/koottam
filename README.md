@@ -67,27 +67,45 @@ python -m koottam build --limit 3000     # training set from the council
 
 ## Results
 
-*Not measured yet.* Rows land in `results.csv` (gitignored) and are copied here once a
-full run finishes.
+Full held-out test set, 2026-09-27. Every member answered all 616 questions.
 
-| System | Cyber (500) | Injection (116) |
-|---|---|---|
-| gpt-oss-120b | – | – |
-| Qwen 3.8 27B | – | – |
-| Gemma 4 31B | – | – |
-| Gemma 4 E2B (local) | – | – |
-| **Council** | – | – |
-| Student, base | – | – |
-| **Student, fine-tuned** | – | – |
+| System | Cyber (500) | Injection (116) | Overall |
+|---|---|---|---|
+| gpt-oss-120b (Cerebras) | 93.6% | 75.9% | 90.3% |
+| Qwen 3.8 27B (Groq) | 94.2% | 81.0% | 91.7% |
+| **Gemma 4 31B (Google)** | **96.2%** | **86.2%** | **94.3%** |
+| Gemma 4 E2B (laptop) | 84.4% | 81.0% | 83.8% |
+| **Council** (vote, tie-breaker on 19 ties) | 95.2% | 81.9% | **92.7%** |
+| Student, base | – | – | – |
+| **Student, fine-tuned** | – | – | – |
+
+**Claim 1, "the council beats its best member": not supported.** The council beat three of
+its four members and their average (89.5%), but lost to Gemma 4 31B by 1.6 points. Why,
+from the saved answers:
+
+- **The right answer was almost always in the room.** On 608 of 616 questions (98.7%) at
+  least one member was right, so knowledge wasn't the problem. Choosing whom to believe was.
+- **Equal votes let correlated mistakes outvote the best member.** gpt-oss and Qwen gave the
+  *same* wrong answer 32 times, the most of any pair. On 9 questions, Gemma 31B was the only
+  member that was right, and it was simply outvoted.
+- **Removing the weak laptop member doesn't fix it** (3 cloud members: 92.9%). The issue is
+  equal weighting, not one bad voter.
+
+Next experiment: weight votes by each member's accuracy, or let the aggregator judge
+every question. Any weights must be learned on *training* questions: tuning them on the
+test set would just be fitting the answer key.
+
+This doesn't block distillation. The training filter keeps an example only when ≥3 members
+agree **and** the key agrees, so the student learns from answers that are correct either way.
 
 ## Progress
 
 | Step | Status |
 |---|---|
 | 1. Scaffold + data | ✅ done 2026-09-26 |
-| 2. Baselines per member | ⏳ needs Cerebras, Groq and Google keys; local member and tie-breaker answering |
-| 3. Council score | ⏳ code done, needs step 2 |
-| 4. Build training set | ⏳ code done, needs keys |
+| 2. Baselines per member | ✅ done 2026-09-27 |
+| 3. Council score | ✅ done 2026-09-27: council 92.7% < best member 94.3% |
+| 4. Build training set | ☐ next; the laptop member needs ~50 h for 3,000 questions (see the AWS GPU question) |
 | 5. LoRA fine-tune | ☐ notebook not written; student model not chosen |
 | 6. Evaluate the student | ☐ |
 

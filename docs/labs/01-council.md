@@ -139,3 +139,29 @@ council, not a bigger one.
 
 Lab 02 turns the council's answers on the *training* questions into a fine-tuning set, and
 trains a small student model on it.
+
+## What we got (2026-09-27)
+
+| System | Overall (616) |
+|---|---|
+| gpt-oss-120b | 90.3% |
+| Qwen 3.8 27B | 91.7% |
+| Gemma 4 31B | **94.3%** |
+| Gemma 4 E2B (laptop) | 83.8% |
+| Council | 92.7% |
+
+The council beat the average member but **not the best one**. The saved answers explain
+why. At least one member was right on 98.7% of questions, but gpt-oss and Qwen often shared
+the same wrong answer (32 times), and equal votes let them outvote Gemma 31B, which was
+alone and right on 9 questions. Diversity is necessary but not sufficient: **how votes are
+weighted matters as much as who votes.** That is the next experiment, with weights learned
+on training questions, never on the test set.
+
+Lessons from running it:
+
+- **Cap requests in flight, not just their rate.** All 616 questions were sent to the laptop
+  at once; it works one at a time, so the queue's tail waited past the 3-minute HTTP timeout
+  and failed. `concurrency = 1` for Ollama fixed it (~12 s per answer).
+- **Always run a retry pass.** Google returned intermittent 500s and Groq some failures (58
+  calls in total). None were cached, and a second `eval --council` filled every gap.
+- Wall-clock time: 4 h 44 min, set by Cerebras' 150 requests/hour.
