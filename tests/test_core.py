@@ -114,3 +114,12 @@ def test_strip_thoughts_removes_private_reasoning() -> None:
     assert strip_thoughts(raw) == "WPA2 encrypts traffic.\n\nANSWER: B"
     assert strip_thoughts("<think>hmm</think>Plain.") == "Plain."
     assert strip_thoughts("No tags here.") == "No tags here."
+
+
+def test_bigger_build_extends_smaller_one() -> None:
+    from koottam.build import train_order
+
+    pool = [_q(f"question number {i}") for i in range(10150)]
+    small = {q.id for q in train_order(pool)[:500]}
+    big = {q.id for q in train_order(pool)[:3000]}
+    assert small <= big  # cached answers from the small run are all reused

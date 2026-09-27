@@ -24,13 +24,23 @@ from koottam import data
 from koottam.config import DATA, Config
 from koottam.council import Council
 from koottam.prompts import INSTRUCTION, SYSTEM, render_question, strip_answer_line
+from koottam.schema import Question
 
 SFT = DATA / "sft.jsonl"
 
 
+def train_order(pool: list[Question]) -> list[Question]:
+    """One fixed shuffle of the train pool. `build --limit N` takes its first N, so a later,
+    bigger build is a superset of an earlier one and reuses every cached answer.
+    (random.sample does not guarantee that: it switches algorithm with the sample size.)"""
+    order = list(pool)
+    random.Random(0).shuffle(order)
+    return order
+
+
 async def build(config: Config, limit: int | None) -> None:
     pool = data.read("train")
-    questions = random.Random(0).sample(pool, limit) if limit and limit < len(pool) else pool
+    questions = train_order(pool)[:limit] if limit else pool
     print(f"building from {len(questions)} of {len(pool)} train questions")
 
     async with httpx.AsyncClient(timeout=180) as http:
