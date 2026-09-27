@@ -46,6 +46,11 @@ class ChatClient:
         self.cfg = cfg
         self.http = http
         self.limiter = RateLimiter(cfg.rpm)
+        # Caps requests in flight. The rate limiter only spaces *starts*; a server that is
+        # slower than the start rate (a laptop CPU) would otherwise build a queue whose
+        # tail waits past the HTTP timeout. That happened on 2026-09-27 and failed most
+        # local calls.
+        self.slots = asyncio.Semaphore(cfg.concurrency)
 
     async def chat(
         self, messages: list[dict[str, str]], max_tokens: int = 2048, temperature: float = 0.0
@@ -62,9 +67,10 @@ class ChatClient:
         }
         url = self.cfg.base_url.rstrip("/") + "/chat/completions"
         for attempt in range(MAX_ATTEMPTS):
-            await self.limiter.wait()
             try:
-                resp = await self.http.post(url, json=body, headers=headers)
+                async with self.slots:
+                    await self.limiter.wait()
+                    resp = await self.http.post(url, json=body, headers=headers)
             except httpx.TransportError:
                 if attempt == MAX_ATTEMPTS - 1:
                     raise

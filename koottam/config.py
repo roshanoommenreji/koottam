@@ -21,6 +21,7 @@ class ModelConfig(BaseModel):
     model: str
     api_key_env: str | None = None
     rpm: float = 10  # fractional allowed: Cerebras' 150/hour cap is 2.5/min
+    concurrency: int = 4  # max requests in flight; 1 for a server that works serially
     # Extra fields merged into every request body, e.g. {reasoning_effort = "none"}.
     extra: dict[str, Any] = {}
     # Output budget. Thinking counts against it: a model that thinks past it returns an

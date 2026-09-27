@@ -51,6 +51,7 @@ provider = "ollama"            # the laptop: a server we own
 base_url = "http://localhost:11434/v1"
 model = "gemma4:e2b"
 rpm = 60
+concurrency = 1               # the CPU answers one at a time; more just queue past the timeout
 # Thinking off: on this laptop's CPU it cuts ~60 s to ~13 s per question (measured
 # 2026-09-26, Ollama 0.23.3). Still the council's slowest member: ~2 h for the test set.
 extra = { reasoning_effort = "none" }
@@ -77,6 +78,7 @@ provider = "ollama"
 base_url = "http://localhost:11434/v1"
 model = "gemma4:e2b"           # placeholder until the student model is chosen (step 5)
 rpm = 60
+concurrency = 1
 extra = { reasoning_effort = "none" }   # same settings as the fine-tuned student, or the comparison is unfair
 
 [students.student-koottam]
@@ -84,6 +86,7 @@ provider = "ollama"
 base_url = "http://localhost:11434/v1"
 model = "koottam-student"      # created by `ollama create` after fine-tuning
 rpm = 60
+concurrency = 1
 extra = { reasoning_effort = "none" }
 
 [council]
