@@ -13,7 +13,8 @@
 # a council member, but fine for the aggregator, which only sees ties.
 
 # ─── the council ───────────────────────────────────────────
-# Four members on four different servers, from three companies' model families.
+# Four members on four different servers, from three companies' model families
+# (OpenAI, Alibaba, Google).
 # Diversity is the point: voting only helps when members make *different* mistakes.
 
 [teachers.gpt-oss]
@@ -21,22 +22,29 @@ provider = "cerebras"
 base_url = "https://api.cerebras.ai/v1"
 model = "gpt-oss-120b"
 api_key_env = "CEREBRAS_API_KEY"
-rpm = 5                       # Cerebras free tier: 5 RPM, 1M tokens/day
+# Limits read from the response headers on 2026-09-27: 5/min, 150/HOUR, 2,400/day,
+# 1M tokens/day. The hourly cap binds first, so 2.5/min. Paid from the $5 of signup
+# credit (auto-recharge off; the credit expires 2026-10-28); ~300 tokens per answer.
+rpm = 2.5
 
-[teachers.llama-70b]
+[teachers.qwen-27b]
 provider = "groq"
 base_url = "https://api.groq.com/openai/v1"
-model = "llama-3.3-70b-versatile"
+# Llama 3.3 70B was the plan, but Groq's free plan no longer lists it (404; its docs
+# mark it Enterprise). The free list on 2026-09-27 was gpt-oss-120b/20b and Qwen 3.8.
+model = "qwen/qwen3.8-27b"
 api_key_env = "GROQ_API_KEY"
-rpm = 20                      # free-tier numbers are only shown after login, at
-                              # https://console.groq.com/settings/limits; adjust to match
+rpm = 20                      # headers: 1,000 requests/day, 8,000 tokens/min
 
 [teachers.gemma-31b]
 provider = "google"
 base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
 model = "gemma-4-31b-it"
 api_key_env = "GOOGLE_API_KEY"
+# Slow (~40 s: it always thinks, and the API refuses to turn that off) and sometimes
+# returns 500, which the client retries. Its <thought> block is stripped by the client.
 rpm = 15
+max_tokens = 8192             # at 2048 it thought itself out of an answer (2026-09-27)
 
 [teachers.gemma-local]
 provider = "ollama"            # the laptop: a server we own
@@ -79,7 +87,7 @@ rpm = 60
 extra = { reasoning_effort = "none" }
 
 [council]
-members = ["gpt-oss", "llama-70b", "gemma-31b", "gemma-local"]
+members = ["gpt-oss", "qwen-27b", "gemma-31b", "gemma-local"]
 # A training example is kept only when at least this many members agree
 # AND the agreed answer matches the answer key.
 min_agree = 3

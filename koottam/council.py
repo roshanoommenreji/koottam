@@ -51,7 +51,11 @@ class Member:
         if cached:
             return cached
         try:
-            text = await self.client.chat(messages or messages_for(q))
+            text = await self.client.chat(messages or messages_for(q), self.cfg.max_tokens)
+            if not text:
+                # Usually the model thought past max_tokens. Treat as a failed call, so
+                # it is retried (e.g. after raising max_tokens) instead of cached forever.
+                raise ValueError("empty reply (thinking may have used up max_tokens)")
             a = Answer(
                 member=self.cfg.name,
                 model=self.cfg.fingerprint,

@@ -11,6 +11,7 @@ from pydantic import BaseModel
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config" / "teachers.toml"
 DATA = ROOT / "data"
+DEFAULT_MAX_TOKENS = 2048
 
 
 class ModelConfig(BaseModel):
@@ -19,17 +20,23 @@ class ModelConfig(BaseModel):
     base_url: str
     model: str
     api_key_env: str | None = None
-    rpm: int = 10
+    rpm: float = 10  # fractional allowed: Cerebras' 150/hour cap is 2.5/min
     # Extra fields merged into every request body, e.g. {reasoning_effort = "none"}.
     extra: dict[str, Any] = {}
+    # Output budget. Thinking counts against it: a model that thinks past it returns an
+    # empty answer (Gemma 4 31B did at 2048 on a maths-style question).
+    max_tokens: int = DEFAULT_MAX_TOKENS
 
     @property
     def fingerprint(self) -> str:
         """Model id plus request settings: two runs share cached answers only if both match.
         Turning thinking off changes the answers, so it must not reuse thinking-on ones."""
-        if not self.extra:
+        settings = dict(self.extra)
+        if self.max_tokens != DEFAULT_MAX_TOKENS:
+            settings["max_tokens"] = self.max_tokens
+        if not settings:
             return self.model
-        return f"{self.model} {json.dumps(self.extra, sort_keys=True)}"
+        return f"{self.model} {json.dumps(settings, sort_keys=True)}"
 
     @property
     def api_key(self) -> str | None:

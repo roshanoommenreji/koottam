@@ -3,6 +3,7 @@
 only in base_url, key and how fast we are allowed to call them."""
 
 import asyncio
+import re
 import time
 
 import httpx
@@ -12,13 +13,22 @@ from koottam.config import ModelConfig
 RETRYABLE = {429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 6
 
+# Some servers return a model's private reasoning inside the answer (Google's Gemma 4
+# sends "<thought>…</thought>", Qwen-style models "<think>…</think>"). It is stripped so
+# votes and training targets see only the explanation meant for the reader.
+_THOUGHT_RE = re.compile(r"<(thought|think)>.*?</\1>", re.DOTALL | re.IGNORECASE)
+
+
+def strip_thoughts(text: str) -> str:
+    return _THOUGHT_RE.sub("", text).strip()
+
 
 class RateLimiter:
     """Spaces request *starts* at least 60/rpm seconds apart. Simpler than a token bucket
     and enough here: free tiers are the bottleneck, not our concurrency."""
 
-    def __init__(self, rpm: int) -> None:
-        self.interval = 60.0 / max(rpm, 1)
+    def __init__(self, rpm: float) -> None:
+        self.interval = 60.0 / max(rpm, 0.1)
         self._next = 0.0
         self._lock = asyncio.Lock()
 
@@ -66,7 +76,7 @@ class ChatClient:
             resp.raise_for_status()
             message = resp.json()["choices"][0]["message"]
             # Reasoning models can spend the whole budget thinking and return no content.
-            return str(message.get("content") or "")
+            return strip_thoughts(str(message.get("content") or ""))
         raise RuntimeError("unreachable")
 
 

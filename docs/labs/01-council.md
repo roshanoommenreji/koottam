@@ -10,8 +10,8 @@ their votes, and measure whether the council is more accurate than its best memb
 
 **Why would a council be smarter than its members?** Only if members make *different*
 mistakes. If three models all share a misconception, a vote just repeats it three times.
-That is why the council deliberately mixes model families (OpenAI's gpt-oss, Meta's
-Llama, Google's Gemma) and why the tie-breaker (NVIDIA's Nemotron) is a family that isn't
+That is why the council deliberately mixes model families (OpenAI's gpt-oss, Alibaba's
+Qwen, Google's Gemma) and why the tie-breaker (NVIDIA's Nemotron) is a family that isn't
 on the council at all.
 
 **Why "different servers"?** Nothing about voting needs it, but it is how you would build
@@ -43,12 +43,17 @@ git config core.hooksPath .githooks
 python -m pytest -q                      # 19 offline tests, no network needed
 ```
 
-Free API keys (no card needed at the time of writing; check before relying on it):
+API keys. All are free tiers, but **Cerebras needs a card on file** (checked 2026-09-27):
+API access stays off until you add a payment method, which then unlocks $5 of signup
+credit valid for a month. On its Billing → Pay as you go page, confirm **"Auto-recharge is
+off"**. Then requests simply stop at $0 and the card is never charged. Groq and Google AI
+Studio need no card; on Google, create the key in a **new project**, because Google's
+limits are per project and an existing project's other apps would share them.
 
 | Key | Where | Used for |
 |---|---|---|
 | `CEREBRAS_API_KEY` | https://cloud.cerebras.ai | gpt-oss-120b |
-| `GROQ_API_KEY` | https://console.groq.com/keys | Llama 3.3 70B |
+| `GROQ_API_KEY` | https://console.groq.com/keys | Qwen 3.8 27B |
 | `GOOGLE_API_KEY` | https://aistudio.google.com/apikey | Gemma 4 31B |
 | `OPENROUTER_API_KEY` | https://openrouter.ai/settings/keys | the tie-breaker |
 
@@ -104,7 +109,7 @@ because answers are cached in `data/answers/<member>.jsonl`:
 
 ```bash
 python -m koottam eval --model gpt-oss
-python -m koottam eval --model llama-70b
+python -m koottam eval --model qwen-27b
 python -m koottam eval --model gemma-31b
 python -m koottam eval --model gemma-local   # ~2 h on a laptop CPU
 ```

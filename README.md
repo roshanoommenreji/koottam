@@ -16,7 +16,7 @@ prompt-injection attacks aimed at AI assistants.
 
 ```
                       ┌─► gpt-oss-120b      Cerebras          (server 1)
-questions ─► koottam ─┼─► Llama 3.3 70B     Groq              (server 2)
+questions ─► koottam ─┼─► Qwen 3.8 27B      Groq              (server 2)
   (laptop)            ├─► Gemma 4 31B       Google AI Studio  (server 3)
                       └─► Gemma 4 E2B       Ollama            (server 4: this laptop)
                                  │
@@ -73,7 +73,7 @@ full run finishes.
 | System | Cyber (500) | Injection (116) |
 |---|---|---|
 | gpt-oss-120b | – | – |
-| Llama 3.3 70B | – | – |
+| Qwen 3.8 27B | – | – |
 | Gemma 4 31B | – | – |
 | Gemma 4 E2B (local) | – | – |
 | **Council** | – | – |

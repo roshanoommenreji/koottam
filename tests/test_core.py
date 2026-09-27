@@ -105,3 +105,12 @@ def test_placeholder_key_counts_as_unset(monkeypatch: pytest.MonkeyPatch) -> Non
     assert m.api_key is None  # a placeholder must read as "no key", not cause a 401
     monkeypatch.setenv("K", "real")
     assert m.api_key == "real"
+
+
+def test_strip_thoughts_removes_private_reasoning() -> None:
+    from koottam.client import strip_thoughts
+
+    raw = "<thought>* Options: A...\nANSWER: <letter></thought>WPA2 encrypts traffic.\n\nANSWER: B"
+    assert strip_thoughts(raw) == "WPA2 encrypts traffic.\n\nANSWER: B"
+    assert strip_thoughts("<think>hmm</think>Plain.") == "Plain."
+    assert strip_thoughts("No tags here.") == "No tags here."
