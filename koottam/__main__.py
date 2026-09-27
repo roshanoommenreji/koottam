@@ -4,7 +4,9 @@
   status                       which keys are set, which servers answer, what is cached
   eval --model NAME [--limit]  score one model on the test set  -> results.csv
   eval --council [--limit]     score the council (reuses members' cached answers)
+  eval --council --weighted    same, with votes weighted by data/weights.json
   build [--limit N]            council answers on train -> data/sft.jsonl
+  weights [--limit N]          learn vote weights from members' answers on train
 """
 
 import argparse
@@ -48,8 +50,11 @@ def main() -> None:
     who.add_argument("--model")
     who.add_argument("--council", action="store_true")
     e.add_argument("--limit", type=int)
+    e.add_argument("--weighted", action="store_true")
     b = sub.add_parser("build")
     b.add_argument("--limit", type=int)
+    w = sub.add_parser("weights")
+    w.add_argument("--limit", type=int, default=500)
     args = p.parse_args()
 
     if args.cmd == "prepare":
@@ -62,13 +67,17 @@ def main() -> None:
         from koottam import evaluate
 
         if args.council:
-            asyncio.run(evaluate.eval_council(config, args.limit))
+            asyncio.run(evaluate.eval_council(config, args.limit, args.weighted))
         else:
             asyncio.run(evaluate.eval_model(config, args.model, args.limit))
     elif args.cmd == "build":
         from koottam.build import build
 
         asyncio.run(build(config, args.limit))
+    elif args.cmd == "weights":
+        from koottam.weights import learn
+
+        learn(config, args.limit)
 
 
 if __name__ == "__main__":

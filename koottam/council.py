@@ -25,17 +25,27 @@ from koottam.schema import Answer, Question, Verdict
 from koottam.store import AnswerStore
 
 
-def vote(votes: dict[str, str | None]) -> tuple[str | None, int]:
-    """(winning choice, number of votes for it). Choice is None when nobody answered or
-    the top choices are tied; the count is then the tied top count."""
-    counts = Counter(v for v in votes.values() if v is not None)
-    if not counts:
+def vote(
+    votes: dict[str, str | None], weights: dict[str, float] | None = None
+) -> tuple[str | None, int]:
+    """(winning choice, number of members who voted for it). Choice is None when nobody
+    answered or the top choices are tied; the count is then the tied top count.
+
+    Without weights every member counts 1. With weights (see weights.py) a member counts
+    its weight, so one reliable member can outvote two that often err together."""
+    score: dict[str, float] = {}
+    heads: Counter[str] = Counter()
+    for member, choice in votes.items():
+        if choice is not None:
+            score[choice] = score.get(choice, 0.0) + (weights.get(member, 1.0) if weights else 1.0)
+            heads[choice] += 1
+    if not score:
         return None, 0
-    ranked = counts.most_common()
-    top, n = ranked[0]
-    if len(ranked) > 1 and ranked[1][1] == n:
-        return None, n
-    return top, n
+    ranked = sorted(score.items(), key=lambda kv: kv[1], reverse=True)
+    top, best = ranked[0]
+    if len(ranked) > 1 and abs(ranked[1][1] - best) < 1e-9:
+        return None, heads[top]
+    return top, heads[top]
 
 
 class Member:
@@ -108,15 +118,19 @@ class Council:
         return {m.cfg.name: r for m, r in zip(self.members, results, strict=True)}
 
     async def decide(
-        self, questions: list[Question], use_aggregator: bool = True
+        self,
+        questions: list[Question],
+        use_aggregator: bool = True,
+        weights: dict[str, dict[str, float]] | None = None,
     ) -> list[Verdict]:
+        """weights: task -> member -> vote weight, from weights.py. None = equal votes."""
         answers = await self.collect(questions)
         by_id = {q.id: q for q in questions}
         verdicts: list[Verdict] = []
         ties: list[tuple[Question, list[Answer], dict[str, str | None]]] = []
         for q in questions:
             votes = {name: answers[name][q.id].choice for name in answers}
-            choice, n = vote(votes)
+            choice, n = vote(votes, weights[q.task] if weights else None)
             if choice is not None:
                 verdicts.append(Verdict(
                     question_id=q.id, choice=choice, votes=votes, agree=n, decided_by="vote"

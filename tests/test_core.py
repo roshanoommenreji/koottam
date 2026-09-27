@@ -123,3 +123,18 @@ def test_bigger_build_extends_smaller_one() -> None:
     small = {q.id for q in train_order(pool)[:500]}
     big = {q.id for q in train_order(pool)[:3000]}
     assert small <= big  # cached answers from the small run are all reused
+
+
+def test_weighted_vote_lets_reliable_member_outvote_correlated_pair() -> None:
+    votes = {"strong": "D", "a": "C", "b": "C"}
+    assert vote(votes) == ("C", 2)  # equal votes: the pair wins
+    assert vote(votes, {"strong": 3.0, "a": 1.0, "b": 1.0}) == ("D", 1)
+
+
+def test_weight_formula() -> None:
+    from koottam.weights import weight
+
+    assert weight(25, 100, 4) == pytest.approx(0, abs=0.05)  # chance level: ~no say
+    assert weight(10, 100, 4) == 0.0  # worse than chance: clamped, never negative
+    assert weight(95, 100, 4) > weight(90, 100, 4) > 0
+    assert weight(10, 10, 2) < float("inf")  # smoothing keeps a perfect record finite

@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 
 import httpx
 
-from koottam import data
+from koottam import data, weights
 from koottam.config import ROOT, Config
 from koottam.council import Council, Member, ask_all
 from koottam.schema import Question
@@ -71,13 +71,17 @@ async def eval_model(config: Config, name: str, limit: int | None) -> None:
            note=f"limit={limit}" if limit else "")
 
 
-async def eval_council(config: Config, limit: int | None) -> None:
+async def eval_council(config: Config, limit: int | None, weighted: bool = False) -> None:
     questions = sample(data.read("test"), limit)
+    w = weights.load() if weighted else None
     async with httpx.AsyncClient(timeout=180) as http:
-        verdicts = await Council(config, http).decide(questions)
+        verdicts = await Council(config, http).decide(questions, weights=w)
     by_agg = sum(v.decided_by == "aggregator" for v in verdicts)
     note = f"members={'+'.join(config.members)} aggregator_decided={by_agg}"
+    if w:
+        note += f" weights={weights.WEIGHTS.name}"
     if limit:
         note += f" limit={limit}"
-    record("council", questions, {v.question_id: v.choice for v in verdicts}, note=note)
+    system = "council-weighted" if w else "council"
+    record(system, questions, {v.question_id: v.choice for v in verdicts}, note=note)
     print(f"  aggregator decided {by_agg}/{len(verdicts)} ties")
