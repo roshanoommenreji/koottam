@@ -35,7 +35,9 @@ async def build(config: Config, limit: int | None) -> None:
 
     async with httpx.AsyncClient(timeout=180) as http:
         council = Council(config, http)
-        verdicts = await council.decide(questions)
+        # No tie-breaks: a tie has at most half the votes, below min_agree, so the
+        # aggregator's call could never produce a kept example. Saves its daily quota.
+        verdicts = await council.decide(questions, use_aggregator=False)
         answers = {m.cfg.name: m.store for m in council.members}
 
     by_id = {q.id: q for q in questions}

@@ -1,15 +1,20 @@
 # Every model Koottam can talk to. All speak the OpenAI-compatible chat API, so the only
 # differences are base_url, model id, key and pace.
 #
-# Model ids were checked on 2026-09-26 against each provider's live model list. Free
-# catalogues change often: if a call returns 404, re-check the list and edit here.
+# Model ids were checked on 2026-09-27 against each provider's docs. Free catalogues
+# change often: if a call returns 404, re-check the list and edit here.
 #
 # rpm = requests per minute we allow ourselves. Keep it at or under the provider's free
 # limit; the client also backs off on HTTP 429 and honours Retry-After.
+#
+# One member per provider, on purpose. Free tiers cap requests per DAY per account, so
+# putting two members on one provider halves each one's budget. OpenRouter's free tier,
+# for example, is 50 requests/day (read from GET /api/v1/key, 2026-09-27): far too few for
+# a council member, but fine for the aggregator, which only sees ties.
 
 # ─── the council ───────────────────────────────────────────
-# Four members on three different servers, from four model families. Diversity is the point:
-# voting only helps when members make *different* mistakes.
+# Four members on four different servers, from three companies' model families.
+# Diversity is the point: voting only helps when members make *different* mistakes.
 
 [teachers.gpt-oss]
 provider = "cerebras"
@@ -18,19 +23,20 @@ model = "gpt-oss-120b"
 api_key_env = "CEREBRAS_API_KEY"
 rpm = 5                       # Cerebras free tier: 5 RPM, 1M tokens/day
 
-[teachers.gemma-31b]
-provider = "openrouter"
-base_url = "https://openrouter.ai/api/v1"
-model = "google/gemma-4-31b-it:free"
-api_key_env = "OPENROUTER_API_KEY"
-rpm = 10
+[teachers.llama-70b]
+provider = "groq"
+base_url = "https://api.groq.com/openai/v1"
+model = "llama-3.3-70b-versatile"
+api_key_env = "GROQ_API_KEY"
+rpm = 20                      # free-tier numbers are only shown after login, at
+                              # https://console.groq.com/settings/limits; adjust to match
 
-[teachers.nemotron]
-provider = "openrouter"
-base_url = "https://openrouter.ai/api/v1"
-model = "nvidia/nemotron-3-super-120b-a12b:free"
-api_key_env = "OPENROUTER_API_KEY"
-rpm = 10
+[teachers.gemma-31b]
+provider = "google"
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+model = "gemma-4-31b-it"
+api_key_env = "GOOGLE_API_KEY"
+rpm = 15
 
 [teachers.gemma-local]
 provider = "ollama"            # the laptop: a server we own
@@ -41,24 +47,19 @@ rpm = 60
 # 2026-09-26, Ollama 0.23.3). Still the council's slowest member: ~2 h for the test set.
 extra = { reasoning_effort = "none" }
 
-# Optional fourth server. Uncomment after adding GROQ_API_KEY and checking the model id
-# at https://console.groq.com/docs/models
-# [teachers.groq-llama]
-# provider = "groq"
-# base_url = "https://api.groq.com/openai/v1"
-# model = "llama-3.3-70b-versatile"
-# api_key_env = "GROQ_API_KEY"
-# rpm = 20
-
 # ─── the aggregator ────────────────────────────────────────
 # Breaks ties. Deliberately a family that is NOT on the council, so it has no own
-# answer to be biased towards.
+# answer to be biased towards. Only `eval --council` uses it: `build` never does, because a
+# tie can never reach min_agree, so its verdict could not become a training example anyway.
 [aggregator]
 provider = "openrouter"
 base_url = "https://openrouter.ai/api/v1"
-model = "qwen/qwen3.8-27b:free"
+# NVIDIA's Nemotron: not on the council. Qwen 3.8 27B was the first choice, but on
+# 2026-09-27 its :free pool (shared by every free user) returned 429 "rate-limited
+# upstream" on every try, as did Gemma's; Nemotron's pool answered.
+model = "nvidia/nemotron-3-super-120b-a12b:free"
 api_key_env = "OPENROUTER_API_KEY"
-rpm = 10
+rpm = 10                       # but only 50 requests/day on the free tier
 
 # ─── students ──────────────────────────────────────────────
 # Models under test that are NOT council members: the base student before training and
@@ -78,7 +79,7 @@ rpm = 60
 extra = { reasoning_effort = "none" }
 
 [council]
-members = ["gpt-oss", "gemma-31b", "nemotron", "gemma-local"]
+members = ["gpt-oss", "llama-70b", "gemma-31b", "gemma-local"]
 # A training example is kept only when at least this many members agree
 # AND the agreed answer matches the answer key.
 min_agree = 3

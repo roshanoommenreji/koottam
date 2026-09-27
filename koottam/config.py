@@ -33,7 +33,9 @@ class ModelConfig(BaseModel):
 
     @property
     def api_key(self) -> str | None:
-        return os.environ.get(self.api_key_env) if self.api_key_env else None
+        """The key, or None if unset or still the .env.example placeholder."""
+        key = os.environ.get(self.api_key_env) if self.api_key_env else None
+        return None if not key or key == "replace-me" else key
 
 
 class Config(BaseModel):
@@ -79,6 +81,10 @@ def load(path: Path = CONFIG_PATH) -> Config:
     missing = [m for m in council["members"] if m not in teachers]
     if missing:
         raise SystemExit(f"council members not defined under [teachers]: {missing}")
+    # A kept example must be a strict majority. `build` also relies on this to skip
+    # tie-breaks: a tie can never be a strict majority.
+    if council["min_agree"] * 2 <= len(council["members"]):
+        raise SystemExit("council.min_agree must be more than half the members")
     return Config(
         teachers=teachers,
         students=section("students"),

@@ -103,7 +103,9 @@ class Council:
         results = await asyncio.gather(*(ask_all(m, questions) for m in self.members))
         return {m.cfg.name: r for m, r in zip(self.members, results, strict=True)}
 
-    async def decide(self, questions: list[Question]) -> list[Verdict]:
+    async def decide(
+        self, questions: list[Question], use_aggregator: bool = True
+    ) -> list[Verdict]:
         answers = await self.collect(questions)
         by_id = {q.id: q for q in questions}
         verdicts: list[Verdict] = []
@@ -118,7 +120,7 @@ class Council:
             else:
                 ties.append((q, [a[q.id] for a in answers.values() if a[q.id].text], votes))
 
-        if ties and self.aggregator:
+        if ties and self.aggregator and use_aggregator:
             agg = self.aggregator
             print(f"  aggregator: breaking {len(ties)} ties", flush=True)
             results = await asyncio.gather(

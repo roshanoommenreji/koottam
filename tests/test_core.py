@@ -95,3 +95,13 @@ async def test_rate_limiter_spaces_requests() -> None:
     for _ in range(4):
         await limiter.wait()
     assert time.monotonic() - t0 >= 0.29
+
+
+def test_placeholder_key_counts_as_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    from koottam.config import ModelConfig
+
+    m = ModelConfig(name="x", provider="p", base_url="u", model="m", api_key_env="K")
+    monkeypatch.setenv("K", "replace-me")
+    assert m.api_key is None  # a placeholder must read as "no key", not cause a 401
+    monkeypatch.setenv("K", "real")
+    assert m.api_key == "real"

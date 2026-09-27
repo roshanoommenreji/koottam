@@ -1,6 +1,6 @@
 # Lab 01: A council of models on different servers
 
-**Goal:** get four models on three servers answering the same security questions, combine
+**Goal:** get four models on four servers answering the same security questions, combine
 their votes, and measure whether the council is more accurate than its best member.
 
 **Time:** ~1 hour hands-on, then several hours of unattended runs (free-tier rate limits).
@@ -10,14 +10,22 @@ their votes, and measure whether the council is more accurate than its best memb
 
 **Why would a council be smarter than its members?** Only if members make *different*
 mistakes. If three models all share a misconception, a vote just repeats it three times.
-That is why the council deliberately mixes model families (OpenAI's gpt-oss, Google's
-Gemma, NVIDIA's Nemotron) and why the tie-breaker (Qwen) is a family that isn't on the
-council at all.
+That is why the council deliberately mixes model families (OpenAI's gpt-oss, Meta's
+Llama, Google's Gemma) and why the tie-breaker (NVIDIA's Nemotron) is a family that isn't
+on the council at all.
 
 **Why "different servers"?** Nothing about voting needs it, but it is how you would build
 this for real. No single provider hosts every model, and spreading load across providers
 means one provider's rate limit or outage doesn't stop the run. The cost is that you must
 handle each server's own limits, which is most of `client.py`.
+
+**Lesson learned: free tiers limit per day, per account.** The first design put three
+roles on OpenRouter. Its key endpoint (`GET /api/v1/key`) showed the free tier allows **50
+requests a day**, which would have made scoring the test set alone a 37-day job. On top of
+that, its `:free` models share one pool across every free user, and on 2026-09-27 the free
+Qwen and Gemma pools were rate-limited for everyone. The fix was one member per provider,
+with OpenRouter only breaking ties. Always read a free tier's real limits from its API
+before sizing a job.
 
 **Why multiple-choice?** Because it can be scored automatically. "Is the council better?"
 is only answerable if "better" is a number.
@@ -32,16 +40,23 @@ git clone <this repo> koottam && cd koottam
 uv venv -p 3.11 .venv
 uv pip install -e ".[dev]"
 git config core.hooksPath .githooks
-python -m pytest -q                      # 18 offline tests, no network needed
+python -m pytest -q                      # 19 offline tests, no network needed
 ```
 
 Free API keys (no card needed at the time of writing; check before relying on it):
 
-- **OpenRouter:** https://openrouter.ai/settings/keys. It serves the `:free` models.
-- **Cerebras:** https://cloud.cerebras.ai.
+| Key | Where | Used for |
+|---|---|---|
+| `CEREBRAS_API_KEY` | https://cloud.cerebras.ai | gpt-oss-120b |
+| `GROQ_API_KEY` | https://console.groq.com/keys | Llama 3.3 70B |
+| `GOOGLE_API_KEY` | https://aistudio.google.com/apikey | Gemma 4 31B |
+| `OPENROUTER_API_KEY` | https://openrouter.ai/settings/keys | the tie-breaker |
+
+On OpenRouter, the "Key limit $100" shown next to a new key is a *spending cap*, not a
+charge. With zero credits bought nothing can be billed, and `:free` models cost $0.
 
 ```bash
-cp .env.example .env    # paste both keys in; .env is gitignored
+cp .env.example .env    # keys go in .env ONLY: .env.example is committed
 ollama pull gemma4:e2b  # the local member, ~7 GB
 ```
 
@@ -89,8 +104,8 @@ because answers are cached in `data/answers/<member>.jsonl`:
 
 ```bash
 python -m koottam eval --model gpt-oss
+python -m koottam eval --model llama-70b
 python -m koottam eval --model gemma-31b
-python -m koottam eval --model nemotron
 python -m koottam eval --model gemma-local   # ~2 h on a laptop CPU
 ```
 

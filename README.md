@@ -15,12 +15,13 @@ prompt-injection attacks aimed at AI assistants.
 ## How it works
 
 ```
-                      ┌─► gpt-oss-120b      Cerebras      (server 1)
-questions ─► koottam ─┼─► Gemma 4 31B       OpenRouter    (server 2)
-  (laptop)            ├─► Nemotron 3 Super  OpenRouter    (server 2)
-                      └─► Gemma 4 E2B       Ollama        (server 3: this laptop)
+                      ┌─► gpt-oss-120b      Cerebras          (server 1)
+questions ─► koottam ─┼─► Llama 3.3 70B     Groq              (server 2)
+  (laptop)            ├─► Gemma 4 31B       Google AI Studio  (server 3)
+                      └─► Gemma 4 E2B       Ollama            (server 4: this laptop)
                                  │
-                   vote ◄────────┘   tie? ─► aggregator: Qwen 3.8 27B reads all the reasoning
+                   vote ◄────────┘   tie? ─► aggregator: Nemotron 3 Super (OpenRouter)
+                                                         reads all the reasoning
                      │
           ┌──────────┴───────────┐
    test questions          train questions
@@ -31,6 +32,11 @@ questions ─► koottam ─┼─► Gemma 4 31B       OpenRouter    (server 2)
 Every model speaks the same OpenAI-compatible API, so adding a server is a few lines in
 [config/teachers.toml](config/teachers.toml). Every answer is cached in `data/answers/`, which
 means runs resume after a rate limit, and scoring the council costs no extra calls.
+
+**One member per provider** is deliberate. Free tiers cap requests per *day* per account.
+OpenRouter's free tier allows 50 a day, too few for a council member but enough for the
+tie-breaker. Its `:free` models also share one pool across all free users, and on
+2026-09-27 some were rate-limited upstream for everyone.
 
 ## Data
 
@@ -48,7 +54,7 @@ must be 0.
 ```bash
 uv venv -p 3.11 .venv && uv pip install -e ".[dev]"
 git config core.hooksPath .githooks      # gitleaks on every commit
-cp .env.example .env                     # add free OpenRouter + Cerebras keys
+cp .env.example .env                     # add 4 free keys: Cerebras, Groq, Google AI Studio, OpenRouter
 ollama pull gemma4:e2b
 
 python -m koottam prepare                # download + split data
@@ -67,8 +73,8 @@ full run finishes.
 | System | Cyber (500) | Injection (116) |
 |---|---|---|
 | gpt-oss-120b | – | – |
+| Llama 3.3 70B | – | – |
 | Gemma 4 31B | – | – |
-| Nemotron 3 Super | – | – |
 | Gemma 4 E2B (local) | – | – |
 | **Council** | – | – |
 | Student, base | – | – |
@@ -79,7 +85,7 @@ full run finishes.
 | Step | Status |
 |---|---|
 | 1. Scaffold + data | ✅ done 2026-09-26 |
-| 2. Baselines per member | ⏳ needs API keys; local member tested |
+| 2. Baselines per member | ⏳ needs Cerebras, Groq and Google keys; local member and tie-breaker answering |
 | 3. Council score | ⏳ code done, needs step 2 |
 | 4. Build training set | ⏳ code done, needs keys |
 | 5. LoRA fine-tune | ☐ notebook not written; student model not chosen |
