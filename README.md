@@ -75,13 +75,19 @@ Full held-out test set, 2026-09-27. Every member answered all 616 questions.
 | Qwen 3.8 27B (Groq) | 94.2% | 81.0% | 91.7% |
 | **Gemma 4 31B (Google)** | **96.2%** | **86.2%** | **94.3%** |
 | Gemma 4 E2B (laptop) | 84.4% | 81.0% | 83.8% |
-| **Council** (vote, tie-breaker on 19 ties) | 95.2% | 81.9% | **92.7%** |
+| **Council**, equal votes (tie-breaker on 19 ties) | 95.2% | 82.8% | **92.9%** |
+| **Council**, weighted votes (learned on train) | 95.6% | 84.5% | **93.5%** |
 | Student, base | – | – | – |
 | **Student, fine-tuned** | – | – | – |
 
-**Claim 1, "the council beats its best member": not supported.** The council beat three of
-its four members and their average (89.5%), but lost to Gemma 4 31B by 1.6 points. Why,
-from the saved answers:
+*(Equal votes first scored 92.7%; a re-score from cache reached 92.9% because one failed
+tie-break was asked again and came out right.)*
+
+**Claim 1, "the council beats its best member": not supported, even with weighting.** Equal
+votes beat three of four members and their average (89.5%), but lost to Gemma 4 31B by 1.4
+points. Weighting each vote by the member's accuracy on 499 *training* questions
+(`log(p(k−1)/(1−p))`, see [koottam/weights.py](koottam/weights.py)) closed about 40% of that
+gap, to 93.5%, and needed no tie-breaks at all. Why equal votes lose, from the saved answers:
 
 - **The right answer was almost always in the room.** On 608 of 616 questions (98.7%) at
   least one member was right, so knowledge wasn't the problem. Choosing whom to believe was.
@@ -91,9 +97,15 @@ from the saved answers:
 - **Removing the weak laptop member doesn't fix it** (3 cloud members: 92.9%). The issue is
   equal weighting, not one bad voter.
 
-Next experiment: weight votes by each member's accuracy, or let the aggregator judge
-every question. Any weights must be learned on *training* questions: tuning them on the
-test set would just be fitting the answer key.
+Weighting was measured honestly: the weights came from training questions only. It helped
+most on injection (82.8% → 84.5%), where members differ most (weights 0.74 to 1.91).
+
+**A second finding: the training file's answer key is noisy.** On 44 of 500 training
+questions, 3–4 members agreed on an answer the key calls wrong (16 of them unanimously).
+Spot checks show real key errors (the key calls "divide a function among several people"
+*Split Knowledge*; all four said *Two-Person Control*) and genuinely ambiguous questions. It
+also explains why members score ~86% on training questions but ~94% on the curated
+CyberMetric-500 test set.
 
 This doesn't block distillation. The training filter keeps an example only when ≥3 members
 agree **and** the key agrees, so the student learns from answers that are correct either way.
@@ -105,7 +117,7 @@ agree **and** the key agrees, so the student learns from answers that are correc
 | 1. Scaffold + data | ✅ done 2026-09-26 |
 | 2. Baselines per member | ✅ done 2026-09-27 |
 | 3. Council score | ✅ done 2026-09-27: council 92.7% < best member 94.3% |
-| 4. Build training set | ☐ next; the laptop member needs ~50 h for 3,000 questions (see the AWS GPU question) |
+| 4. Build training set | ⏳ 417 examples from the first 500 questions (2026-09-28); growing to ~3,000 (~2 days, paced by Cerebras) |
 | 5. LoRA fine-tune | ☐ notebook not written; student model not chosen |
 | 6. Evaluate the student | ☐ |
 

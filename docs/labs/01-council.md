@@ -165,3 +165,19 @@ Lessons from running it:
 - **Always run a retry pass.** Google returned intermittent 500s and Groq some failures (58
   calls in total). None were cached, and a second `eval --council` filled every gap.
 - Wall-clock time: 4 h 44 min, set by Cerebras' 150 requests/hour.
+
+## Weighted votes (2026-09-28)
+
+```bash
+python -m koottam build --limit 500     # members answer 500 TRAIN questions (cached)
+python -m koottam weights               # accuracy per member per task -> data/weights.json
+python -m koottam eval --council --weighted
+```
+
+Each vote counts `log(p(k−1)/(1−p))`, where p is the member's accuracy on training questions
+and k the number of options: the optimal rule for independent voters (Nitzan & Paroush). A
+member at chance gets 0; each halving of its error rate adds a constant amount.
+
+Result: 93.5%, against 92.9% for equal votes and 94.3% for the best member. It's better, but
+still not a win. The weights were learned without touching the test set. If you tune them
+until the test score beats 94.3%, you've learned the answer key, not a better council.
