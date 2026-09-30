@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Koottam</title>
+<meta name="description" content="Four AI models on four servers vote on security questions. Does the crowd beat its smartest member? Then the crowd is distilled into one laptop-sized model.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='9' cy='11' r='5' fill='%232f6fdb'/><circle cx='23' cy='11' r='5' fill='%232f6fdb'/><circle cx='16' cy='23' r='5' fill='%23e0822f'/></svg>">
+<style>
+:root {
+  --bg: #fbfaf7; --surface: #ffffff; --ink: #1c1d21; --muted: #5d6068; --line: #e3e1db;
+  --accent: #2f6fdb; --accent-soft: #e6eefc; --warm: #c2661c; --warm-soft: #fbeee2;
+  --good: #1f7a4d; --good-soft: #e3f3ea; --code: #f2f1ed;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131417; --surface: #1b1d21; --ink: #ecebe6; --muted: #a3a5ab; --line: #2d3036;
+    --accent: #7aa7ff; --accent-soft: #1e2a42; --warm: #f0a35e; --warm-soft: #3a2a1b;
+    --good: #6fd19c; --good-soft: #1a3326; --code: #23252a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131417; --surface: #1b1d21; --ink: #ecebe6; --muted: #a3a5ab; --line: #2d3036;
+  --accent: #7aa7ff; --accent-soft: #1e2a42; --warm: #f0a35e; --warm-soft: #3a2a1b;
+  --good: #6fd19c; --good-soft: #1a3326; --code: #23252a;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 860px; margin: 0 auto; padding: 48px 16px 80px; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.2rem); line-height: 1.1; margin: 0 0 4px; letter-spacing: -0.02em; }
+h2 { font-size: 1.45rem; margin: 56px 0 12px; letter-spacing: -0.01em; }
+h3 { font-size: 1.05rem; margin: 0 0 6px; }
+p { margin: 0 0 14px; }
+a { color: var(--accent); }
+.kicker { color: var(--muted); font-size: 0.95rem; margin-bottom: 20px; }
+.lede { font-size: 1.2rem; max-width: 42em; }
+.links { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 0; }
+.btn {
+  display: inline-block; padding: 9px 16px; border-radius: 8px; text-decoration: none;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; font-size: 0.95rem;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+:root[data-theme="dark"] .btn.primary { color: #0b1020; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #0b1020; } }
+.claims { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 18px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.badge { display: inline-block; font-size: 0.78rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; margin-bottom: 8px; }
+.badge.no { background: var(--warm-soft); color: var(--warm); }
+.badge.wip { background: var(--accent-soft); color: var(--accent); }
+.figure { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-x: auto; }
+.figure svg { display: block; width: 100%; min-width: 560px; height: auto; }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; min-width: 520px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+th { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+td.n, th.n { text-align: right; }
+tr:last-child td { border-bottom: 0; }
+tr.best td { background: var(--good-soft); }
+tr.council td { font-weight: 600; }
+.note { color: var(--muted); font-size: 0.9rem; margin-top: 10px; }
+.findings { display: grid; gap: 14px; }
+.finding { display: grid; grid-template-columns: 88px 1fr; gap: 16px; align-items: start; }
+.big { font-size: 1.75rem; font-weight: 700; color: var(--accent); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.eng { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.eng p { color: var(--muted); font-size: 0.95rem; margin: 0; }
+code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
+ol.road { padding-left: 20px; }
+ol.road li { margin-bottom: 6px; }
+.done { color: var(--good); font-weight: 600; }
+footer { margin-top: 64px; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); padding-top: 18px; }
+@media (max-width: 520px) {
+  body { font-size: 16px; }
+  .finding { grid-template-columns: 1fr; gap: 2px; }
+}
+</style>
+</head>
+<body>
+<main>
+
+<p class="kicker">Koottam (കൂട്ടം) · Malayalam for "a gathering" · a measured AI experiment</p>
+<h1>Is a crowd of AI models smarter than its best member?</h1>
+<p class="lede">Four open-weight models, each on a different server, answer the same 616 security
+questions and vote. Then the crowd's agreed answers train one small model that runs on a laptop.
+Nothing is assumed. Each claim is scored on held-out questions.</p>
+<div class="links">
+  <a class="btn primary" href="https://github.com/roshanoommenreji/koottam">Code on GitHub</a>
+  <a class="btn" href="https://github.com/roshanoommenreji/koottam/blob/main/docs/labs/01-council.md">Lab 01: rebuild it</a>
+  <a class="btn" href="https://github.com/roshanoommenreji/koottam/tree/main/docs/journal">Build journal</a>
+</div>
+
+<div class="claims">
+  <div class="card">
+    <span class="badge no">Measured: not supported</span>
+    <h3>1. The council beats its best member</h3>
+    <p>Weighted council 93.5% vs the best member's 94.3%. It beats three of four members, but not the best.</p>
+  </div>
+  <div class="card">
+    <span class="badge wip">In progress</span>
+    <h3>2. A small model trained on the council beats its untrained self</h3>
+    <p>Training set built from the council's answers: 1,255 examples so far. LoRA fine-tune next.</p>
+  </div>
+</div>
+
+<h2>How it works</h2>
+<div class="figure" role="img" aria-label="Diagram: the laptop sends each question to four models on four servers; their votes are combined, ties go to a fifth model; test answers are scored, training answers become a fine-tuning set for a small student model.">
+<svg viewBox="0 0 800 330" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif" font-size="14">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ah)">
+    <path d="M150 150 L238 45"/><path d="M150 155 L238 105"/><path d="M150 160 L238 165"/><path d="M150 165 L238 225"/>
+    <path d="M470 45 L548 140"/><path d="M470 105 L548 150"/><path d="M470 165 L548 160"/><path d="M470 225 L548 170"/>
+    <path d="M660 128 L660 72"/>
+    <path d="M605 185 L520 268"/><path d="M660 185 L700 268"/>
+  </g>
+  <rect x="20" y="130" width="130" height="56" rx="10" fill="var(--surface)" stroke="var(--line)"/>
+  <text x="85" y="154" text-anchor="middle" fill="var(--ink)" font-weight="700">koottam</text>
+  <text x="85" y="173" text-anchor="middle" fill="var(--muted)" font-size="12">laptop · asyncio</text>
+  <g font-size="13">
+    <rect x="240" y="22" width="230" height="44" rx="8" fill="var(--accent-soft)"/>
+    <text x="254" y="42" fill="var(--ink)" font-weight="600">gpt-oss-120b</text><text x="254" y="58" fill="var(--muted)" font-size="11.5">Cerebras · OpenAI family</text>
+    <rect x="240" y="82" width="230" height="44" rx="8" fill="var(--accent-soft)"/>
+    <text x="254" y="102" fill="var(--ink)" font-weight="600">Qwen 3.8 27B</text><text x="254" y="118" fill="var(--muted)" font-size="11.5">Groq · Alibaba family</text>
+    <rect x="240" y="142" width="230" height="44" rx="8" fill="var(--accent-soft)"/>
+    <text x="254" y="162" fill="var(--ink)" font-weight="600">Gemma 4 31B</text><text x="254" y="178" fill="var(--muted)" font-size="11.5">Google AI Studio</text>
+    <rect x="240" y="202" width="230" height="44" rx="8" fill="var(--accent-soft)"/>
+    <text x="254" y="222" fill="var(--ink)" font-weight="600">Gemma 4 E2B</text><text x="254" y="238" fill="var(--muted)" font-size="11.5">Ollama · on the laptop</text>
+  </g>
+  <rect x="550" y="130" width="220" height="56" rx="10" fill="var(--surface)" stroke="var(--line)"/>
+  <text x="660" y="154" text-anchor="middle" fill="var(--ink)" font-weight="700">weighted vote</text>
+  <text x="660" y="173" text-anchor="middle" fill="var(--muted)" font-size="12">weights learned on train only</text>
+  <rect x="560" y="22" width="200" height="48" rx="8" fill="var(--warm-soft)"/>
+  <text x="660" y="42" text-anchor="middle" fill="var(--ink)" font-weight="600" font-size="13">tie? Nemotron 3 Super</text>
+  <text x="660" y="59" text-anchor="middle" fill="var(--muted)" font-size="11.5">OpenRouter · reads all reasoning</text>
+  <rect x="400" y="270" width="190" height="50" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+  <text x="495" y="291" text-anchor="middle" fill="var(--ink)" font-weight="600" font-size="13">test questions</text>
+  <text x="495" y="308" text-anchor="middle" fill="var(--muted)" font-size="11.5">scored → results.csv</text>
+  <rect x="610" y="270" width="180" height="50" rx="8" fill="var(--good-soft)"/>
+  <text x="700" y="291" text-anchor="middle" fill="var(--ink)" font-weight="600" font-size="13">train questions</text>
+  <text x="700" y="308" text-anchor="middle" fill="var(--muted)" font-size="11.5">≥3 agree + key → LoRA</text>
+</svg>
+</div>
+<p class="note">Every server speaks the same OpenAI-compatible API, so one async client drives all of them.
+One member per provider is deliberate: free tiers cap requests per day, per account.</p>
+
+<h2>Results: 616 held-out questions</h2>
+<p>500 questions from the published CyberMetric-500 security benchmark, plus 116 prompt-injection
+examples (is this text an attack on an AI assistant?). No test question, or near-copy of one, is in training.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>System</th><th class="n">Security (500)</th><th class="n">Injection (116)</th><th class="n">Overall</th></tr></thead>
+  <tbody>
+    <tr><td>gpt-oss-120b (Cerebras)</td><td class="n">93.6%</td><td class="n">75.9%</td><td class="n">90.3%</td></tr>
+    <tr><td>Qwen 3.8 27B (Groq)</td><td class="n">94.2%</td><td class="n">81.0%</td><td class="n">91.7%</td></tr>
+    <tr class="best"><td><strong>Gemma 4 31B (Google)</strong>, best member</td><td class="n"><strong>96.2%</strong></td><td class="n"><strong>86.2%</strong></td><td class="n"><strong>94.3%</strong></td></tr>
+    <tr><td>Gemma 4 E2B (laptop)</td><td class="n">84.4%</td><td class="n">81.0%</td><td class="n">83.8%</td></tr>
+    <tr class="council"><td>Council, equal votes</td><td class="n">95.2%</td><td class="n">82.8%</td><td class="n">92.9%</td></tr>
+    <tr class="council"><td>Council, weighted votes</td><td class="n">95.6%</td><td class="n">84.5%</td><td class="n">93.5%</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="note">Scored 2026-09-27 and 2026-09-28. Every member answered all 616 questions.</p>
+
+<h2>What the data showed</h2>
+<div class="findings">
+  <div class="finding"><div class="big">98.7%</div>
+    <div><h3>The right answer was almost always in the room</h3>
+    <p>On 608 of 616 questions at least one member was right. Knowledge wasn't the bottleneck.
+    <em>Choosing whom to believe</em> was.</p></div></div>
+  <div class="finding"><div class="big">32×</div>
+    <div><h3>Correlated mistakes outvote the best member</h3>
+    <p>gpt-oss and Qwen gave the <em>same</em> wrong answer 32 times. On 9 questions the best model was
+    the only one right, and equal votes simply outvoted it. A council needs members that fail
+    <em>differently</em>. Diversity of model family is necessary, not sufficient.</p></div></div>
+  <div class="finding"><div class="big">~40%</div>
+    <div><h3>Weighting votes closes part of the gap</h3>
+    <p>Each vote counts <code>log(p(k−1)/(1−p))</code>, the optimal rule for independent voters
+    (Nitzan–Paroush). The weights were learned from training questions only; tuning them on the test set would only
+    memorise the answer key. Result: 92.9% → 93.5%, with no tie-breaks needed.</p></div></div>
+  <div class="finding"><div class="big">~7%</div>
+    <div><h3>The training key is noisy</h3>
+    <p>On ~7% of training questions, three or more models agreed against the answer key. Spot
+    checks found real key errors. The training filter keeps an example only when the council
+    <em>and</em> the key agree, so the student never learns a disputed answer.</p></div></div>
+</div>
+
+<h2>Engineering</h2>
+<div class="eng">
+  <div class="card"><h3>Four free tiers, four sets of limits</h3>
+    <p>Per-model request pacing (fractional req/min) plus an in-flight cap, and retry on 429/5xx with
+    <code>Retry-After</code> and backoff. Total model spend: $0.</p></div>
+  <div class="card"><h3>Resumable by design</h3>
+    <p>Every answer is cached, keyed by the model's fingerprint (id + settings). Runs survive
+    rate limits, sleep and shutdown; scoring the council costs no extra calls.</p></div>
+  <div class="card"><h3>No test leakage</h3>
+    <p>Exact <em>and</em> near-duplicate (≥80% word overlap) removal between train and test. This
+    caught a typo'd copy of a test question hiding in the training pool.</p></div>
+  <div class="card"><h3>Built to be checked</h3>
+    <p>Python 3.11, pydantic v2, mypy strict, ruff, 23 offline tests. gitleaks runs pre-commit and
+    in CI over the full history.</p></div>
+</div>
+
+<h2>Roadmap</h2>
+<ol class="road">
+  <li><span class="done">Done</span>: data, train/test split with leak checks</li>
+  <li><span class="done">Done</span>: every member scored alone</li>
+  <li><span class="done">Done</span>: council scored, equal and weighted votes</li>
+  <li>In progress: training set from the council (1,255 examples, growing to ~3,000)</li>
+  <li>Next: LoRA fine-tune of a small student on a free GPU, exported to Ollama</li>
+  <li>Next: claim 2, the student scored against its untrained base on the same 616 questions</li>
+</ol>
+<p><strong>Scope, deliberately:</strong> defensive security and prompt-injection detection only. No
+offensive tooling in the training data.</p>
+
+<footer>
+  Built by Roshan Oommen Reji ·
+  <a href="https://github.com/roshanoommenreji/koottam">github.com/roshanoommenreji/koottam</a> ·
+  MIT licence · datasets: CyberMetric and deepset/prompt-injections (Apache-2.0)
+</footer>
+
+</main>
+</body>
+</html>

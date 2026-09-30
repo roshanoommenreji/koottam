@@ -1,5 +1,14 @@
 # Koottam
 
+[![ci](https://github.com/roshanoommenreji/koottam/actions/workflows/ci.yml/badge.svg)](https://github.com/roshanoommenreji/koottam/actions/workflows/ci.yml)
+[![licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+
+**Showcase page: [roshanoommenreji.github.io/koottam](https://roshanoommenreji.github.io/koottam/)**
+
+> **Status:** claim 1 is measured (the council does *not* beat its best member: 93.5% vs
+> 94.3%, see [Results](#results)). Claim 2 is in progress: the training set is being built
+> and the fine-tune is next.
+
 *Koottam* (കൂട്ടം) is Malayalam for "a gathering". This repo gathers several AI models,
 each on a different server, into a council, and then distils what the council knows into
 one small model you can run on a laptop.
