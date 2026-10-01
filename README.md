@@ -126,7 +126,7 @@ agree **and** the key agrees, so the student learns from answers that are correc
 | 1. Scaffold + data | ✅ done 2026-09-26 |
 | 2. Baselines per member | ✅ done 2026-09-27 |
 | 3. Council score | ✅ done 2026-09-27: council 92.7% < best member 94.3% |
-| 4. Build training set | ⏳ 1,255 examples from the first 1,500 questions (2026-09-29); growing to ~3,000 (one more ~1,000/day chunk, then a retry pass) |
+| 4. Build training set | ✅ 2,094 examples from the first 2,500 questions (2026-10-01); enough for the first fine-tune, may grow to ~3,000 later |
 | 5. LoRA fine-tune | ☐ notebook not written; student model not chosen |
 | 6. Evaluate the student | ☐ |
 
