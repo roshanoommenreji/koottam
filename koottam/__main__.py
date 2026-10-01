@@ -7,6 +7,7 @@
   eval --council --weighted    same, with votes weighted by data/weights.json
   build [--limit N]            council answers on train -> data/sft.jsonl
   weights [--limit N]          learn vote weights from members' answers on train
+  students                     register the notebook's two GGUFs with Ollama (Lab 02)
 """
 
 import argparse
@@ -55,6 +56,7 @@ def main() -> None:
     b.add_argument("--limit", type=int)
     w = sub.add_parser("weights")
     w.add_argument("--limit", type=int, default=500)
+    sub.add_parser("students")
     args = p.parse_args()
 
     if args.cmd == "prepare":
@@ -78,6 +80,10 @@ def main() -> None:
         from koottam.weights import learn
 
         learn(config, args.limit)
+    elif args.cmd == "students":
+        from koottam.students import serve
+
+        serve(config)
 
 
 if __name__ == "__main__":

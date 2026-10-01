@@ -72,11 +72,15 @@ rpm = 10                       # but only 50 requests/day on the free tier
 
 # ─── students ──────────────────────────────────────────────
 # Models under test that are NOT council members: the base student before training and
-# the fine-tuned one after. Both served by the local Ollama.
+# the fine-tuned one after. Both are Gemma 3 1B instruct, exported by train/finetune.ipynb
+# through the same GGUF pipeline (Q8_0) and registered by `python -m koottam students`
+# with the same template, so the only difference between them is the training.
+# Gemma 3 1B, not Gemma 4 E2B: E2B is a council member, so it would be trained partly on
+# its own answers. 1B is also small enough to leave room to improve.
 [students.student-base]
 provider = "ollama"
 base_url = "http://localhost:11434/v1"
-model = "gemma4:e2b"           # placeholder until the student model is chosen (step 5)
+model = "koottam-base"         # the untrained student, created by `koottam students`
 rpm = 60
 concurrency = 1
 extra = { reasoning_effort = "none" }   # same settings as the fine-tuned student, or the comparison is unfair
@@ -84,7 +88,7 @@ extra = { reasoning_effort = "none" }   # same settings as the fine-tuned studen
 [students.student-koottam]
 provider = "ollama"
 base_url = "http://localhost:11434/v1"
-model = "koottam-student"      # created by `ollama create` after fine-tuning
+model = "koottam-student"      # the fine-tuned student, created by `koottam students`
 rpm = 60
 concurrency = 1
 extra = { reasoning_effort = "none" }

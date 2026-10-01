@@ -40,7 +40,7 @@ git clone <this repo> koottam && cd koottam
 uv venv -p 3.11 .venv
 uv pip install -e ".[dev]"
 git config core.hooksPath .githooks
-python -m pytest -q                      # 23 offline tests, no network needed
+python -m pytest -q                      # 24 offline tests, no network needed
 ```
 
 API keys. All are free tiers, but **Cerebras needs a card on file** (checked 2026-09-27):
@@ -94,7 +94,8 @@ python -m koottam status
 
 Every line should say `ok`. `no key` means a `.env` entry is missing. A `404` on a remote
 model means the free catalogue changed: find the current id in the provider's model list
-and edit `config/teachers.toml`. `student-koottam` fails until Lab 02, which is expected.
+and edit `config/teachers.toml`. `student-base` and `student-koottam` fail until Lab 02
+creates them, which is expected.
 
 ## 4. Score each member alone
 
@@ -137,8 +138,8 @@ council, not a bigger one.
 
 ## What's next
 
-Lab 02 turns the council's answers on the *training* questions into a fine-tuning set, and
-trains a small student model on it.
+[Lab 02](02-distill.md) trains a small student model (Gemma 3 1B) on the fine-tuning set
+that `build` makes from the council's answers on the *training* questions.
 
 ## What we got (2026-09-27)
 

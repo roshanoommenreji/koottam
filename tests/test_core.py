@@ -138,3 +138,15 @@ def test_weight_formula() -> None:
     assert weight(10, 100, 4) == 0.0  # worse than chance: clamped, never negative
     assert weight(95, 100, 4) > weight(90, 100, 4) > 0
     assert weight(10, 10, 2) < float("inf")  # smoothing keeps a perfect record finite
+
+
+def test_students_are_served_identically() -> None:
+    """Claim 2 is only fair if base and fine-tuned differ in weights alone."""
+    from koottam import config as cfg
+    from koottam.students import gguf_for, modelfile
+
+    names = [cfg.load().model(s).model for s in ("student-base", "student-koottam")]
+    files = [modelfile(str(gguf_for(n))) for n in names]
+    assert [f.split("\n", 1)[1] for f in files][0] == [f.split("\n", 1)[1] for f in files][1]
+    assert gguf_for("koottam-student").name == "koottam-student.Q8_0.gguf"  # notebook's name
+    assert r'"<start_of_turn>user\n" }}{{ .Content }}{{ "\n\n" }}' in files[0]  # system folded in

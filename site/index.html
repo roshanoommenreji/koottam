@@ -101,7 +101,8 @@ Nothing is assumed. Each claim is scored on held-out questions.</p>
   <div class="card">
     <span class="badge wip">In progress</span>
     <h3>2. A small model trained on the council beats its untrained self</h3>
-    <p>Training set built from the council's answers: 2,094 examples. LoRA fine-tune next.</p>
+    <p>2,094 training examples from the council's answers. The student is Gemma 3 1B; the LoRA
+    notebook is ready to run on a free GPU.</p>
   </div>
 </div>
 
@@ -202,7 +203,7 @@ examples (is this text an attack on an AI assistant?). No test question, or near
     <p>Exact <em>and</em> near-duplicate (≥80% word overlap) removal between train and test. This
     caught a typo'd copy of a test question hiding in the training pool.</p></div>
   <div class="card"><h3>Built to be checked</h3>
-    <p>Python 3.11, pydantic v2, mypy strict, ruff, 23 offline tests. gitleaks runs pre-commit and
+    <p>Python 3.11, pydantic v2, mypy strict, ruff, 24 offline tests. gitleaks runs pre-commit and
     in CI over the full history.</p></div>
 </div>
 
@@ -212,7 +213,8 @@ examples (is this text an attack on an AI assistant?). No test question, or near
   <li><span class="done">Done</span>: every member scored alone</li>
   <li><span class="done">Done</span>: council scored, equal and weighted votes</li>
   <li><span class="done">Done</span>: training set from the council (2,094 examples from 2,500 questions)</li>
-  <li>Next: LoRA fine-tune of a small student on a free GPU, exported to Ollama</li>
+  <li><span class="done">Ready</span>: LoRA fine-tune of Gemma 3 1B on a free GPU, with base and
+    student exported and served identically (same GGUF path, same chat template)</li>
   <li>Next: claim 2, the student scored against its untrained base on the same 616 questions</li>
 </ol>
 <p><strong>Scope, deliberately:</strong> defensive security and prompt-injection detection only. No

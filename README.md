@@ -6,8 +6,8 @@
 **Showcase page: [roshanoommenreji.github.io/koottam](https://roshanoommenreji.github.io/koottam/)**
 
 > **Status:** claim 1 is measured (the council does *not* beat its best member: 93.5% vs
-> 94.3%, see [Results](#results)). Claim 2 is in progress: the training set is being built
-> and the fine-tune is next.
+> 94.3%, see [Results](#results)). Claim 2 is in progress: 2,094 training examples are
+> built, and the student (Gemma 3 1B) fine-tune notebook is ready to run.
 
 *Koottam* (കൂട്ടം) is Malayalam for "a gathering". This repo gathers several AI models,
 each on a different server, into a council, and then distils what the council knows into
@@ -71,7 +71,11 @@ python -m koottam status                 # which servers answer
 python -m koottam eval --model gpt-oss --limit 20    # smoke test one member
 python -m koottam eval --model gpt-oss   # full test set, each member in turn
 python -m koottam eval --council         # the council, from cached answers
-python -m koottam build --limit 3000     # training set from the council
+python -m koottam build --limit 2500     # training set from the council
+# fine-tune on a free GPU: train/finetune.ipynb (Lab 02), then
+python -m koottam students               # serve base + fine-tuned student in Ollama
+python -m koottam eval --model student-base
+python -m koottam eval --model student-koottam
 ```
 
 ## Results
@@ -86,8 +90,8 @@ Full held-out test set, 2026-09-27. Every member answered all 616 questions.
 | Gemma 4 E2B (laptop) | 84.4% | 81.0% | 83.8% |
 | **Council**, equal votes (tie-breaker on 19 ties) | 95.2% | 82.8% | **92.9%** |
 | **Council**, weighted votes (learned on train) | 95.6% | 84.5% | **93.5%** |
-| Student, base | – | – | – |
-| **Student, fine-tuned** | – | – | – |
+| Student, base (Gemma 3 1B) | – | – | – |
+| **Student, fine-tuned** (Gemma 3 1B + LoRA) | – | – | – |
 
 *(Equal votes first scored 92.7%; a re-score from cache reached 92.9% because one failed
 tie-break was asked again and came out right.)*
@@ -127,7 +131,7 @@ agree **and** the key agrees, so the student learns from answers that are correc
 | 2. Baselines per member | ✅ done 2026-09-27 |
 | 3. Council score | ✅ done 2026-09-27: council 92.7% < best member 94.3% |
 | 4. Build training set | ✅ 2,094 examples from the first 2,500 questions (2026-10-01); enough for the first fine-tune, may grow to ~3,000 later |
-| 5. LoRA fine-tune | ☐ notebook not written; student model not chosen |
+| 5. LoRA fine-tune | ◐ student chosen (Gemma 3 1B), [notebook](train/finetune.ipynb) and Ollama serving ready (2026-10-01); GPU run next |
 | 6. Evaluate the student | ☐ |
 
 ## Cost
@@ -147,4 +151,6 @@ Out of scope:
 ## Docs
 
 - [Lab 01: the council](docs/labs/01-council.md), which rebuilds steps 1–3 from zero
+- [Lab 02: distillation](docs/labs/02-distill.md), steps 4–6: fine-tune a 1B student and
+  score it fairly against its base
 - [Journal](docs/journal/)
