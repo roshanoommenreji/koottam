@@ -125,6 +125,23 @@ def test_bigger_build_extends_smaller_one() -> None:
     assert small <= big  # cached answers from the small run are all reused
 
 
+def test_balance_evens_out_answers_of_one_task_only() -> None:
+    from koottam.build import answer_of, balance
+
+    def row(task: str, letter: str, i: int) -> dict[str, object]:
+        return {"id": f"{task}{letter}{i}", "task": task,
+                "messages": [{"role": "assistant", "content": f"Because.\nANSWER: {letter}"}]}
+
+    rows = ([row("injection", "A", i) for i in range(5)]
+            + [row("injection", "B", i) for i in range(2)]
+            + [row("cyber", "C", i) for i in range(3)])
+    kept = balance(rows, "injection")
+    assert [answer_of(r) for r in kept if r["task"] == "injection"].count("A") == 2
+    assert [r["id"] for r in kept if r["task"] == "injection"][:2] == ["injectionA0", "injectionA1"]
+    assert sum(r["task"] == "cyber" for r in kept) == 3  # the other task is untouched
+    assert balance(rows, "missing") == rows
+
+
 def test_weighted_vote_lets_reliable_member_outvote_correlated_pair() -> None:
     votes = {"strong": "D", "a": "C", "b": "C"}
     assert vote(votes) == ("C", 2)  # equal votes: the pair wins
@@ -145,9 +162,10 @@ def test_students_are_served_identically() -> None:
     from koottam import config as cfg
     from koottam.students import gguf_for, modelfile
 
-    names = [cfg.load().model(s).model for s in ("student-base", "student-koottam")]
+    config = cfg.load()
+    names = [config.model(s).model for s in config.students]
     files = [modelfile(str(gguf_for(n))) for n in names]
-    assert [f.split("\n", 1)[1] for f in files][0] == [f.split("\n", 1)[1] for f in files][1]
+    assert len(files) >= 2 and len({f.split("\n", 1)[1] for f in files}) == 1  # all but FROM
     assert gguf_for("koottam-student").name == "koottam-student.Q8_0.gguf"  # notebook's name
     assert r'"<start_of_turn>user\n" }}{{ .Content }}{{ "\n\n" }}' in files[0]  # system folded in
 

@@ -4,7 +4,7 @@
 same model untrained (claim 2).
 
 **Time:** ~30 min hands-on, ~20 min on a free cloud GPU, then ~2 h of unattended scoring on
-the laptop. **Cost:** $0 (free Colab or Kaggle T4).
+the laptop. Run 2 adds ~3 h of unattended council calls, ~20 min of GPU and ~1 h of scoring. **Cost:** $0 (free Colab or Kaggle T4).
 
 Prerequisite: [Lab 01](01-council.md), through `python -m koottam build`, which wrote
 `data/sft.jsonl`.
@@ -83,12 +83,15 @@ wc -l data/sft.jsonl        # 2094 on 2026-10-01
 ```
 
 If you rebuilt it with a different `--limit`, update `EXPECTED_EXAMPLES` in the notebook's
-settings cell. The notebook only warns on a mismatch, but `run.json` records the count and
-sha256, so every trained model traces back to one exact file.
+settings cell. The notebook only warns on a mismatch, but the run's `.run.json` records the
+count and sha256, so every trained model traces back to one exact file.
 
 ## 2. Run the notebook on a free GPU
 
-Open [train/finetune.ipynb](../../train/finetune.ipynb) in one of these:
+Open [train/finetune.ipynb](../../train/finetune.ipynb). The committed settings are for
+[run 2](#run-2-balance-the-injection-lessons). For a first run, set
+`STUDENT_NAME = "koottam-student"` and `EXPORT_BASE = True` in the settings cell. Then use
+one of these:
 
 - **Colab:** File → Upload notebook. Then Runtime → Change runtime type → **T4 GPU**, and
   Runtime → Run all. When the data cell asks, upload `data/sft.jsonl`.
@@ -109,14 +112,15 @@ What each step prints, and what to look for:
 | train | the held-out loss after epoch 2 not clearly *above* epoch 1 (if it is, it's memorising: drop to 1 epoch) |
 | sanity | most of 40 held-out answers right, and **all 40** with a parseable `ANSWER:` line |
 
-The last cell writes `koottam-base.Q8_0.gguf`, `koottam-student.Q8_0.gguf` (~1 GB each)
-and `run.json`. On Colab it copies them to Google Drive under `MyDrive/koottam/`, because a
-1 GB browser download from Colab often fails. On Kaggle they're in the Output tab.
+The last cell writes `koottam-base.Q8_0.gguf` (first run only), `koottam-student.Q8_0.gguf`
+(~1 GB each) and `koottam-student.run.json`. On Colab it copies them to Google Drive under
+`MyDrive/koottam/`, because a 1 GB browser download from Colab often fails. On Kaggle
+they're in the Output tab.
 
 ## 3. Bring the files to the laptop
 
-Put all three files in `train/outputs/` (gitignored, like every `*.gguf`), then commit
-`run.json`'s numbers into the journal, not the file itself.
+Put all three files in `train/outputs/` (gitignored, like every `*.gguf`), then copy
+`koottam-student.run.json`'s numbers into the journal; don't commit the file itself.
 
 ## 4. Register both students with Ollama
 
@@ -213,15 +217,70 @@ total:
 - **Against the teachers:** it closed 19% of the gap from base to the weighted council (6.3
   of 33.1 points). Gemma 4 E2B, the council's laptop member, scores 83.8%.
 
-The run behind these numbers, from `train/outputs/run.json`: 1,989 training examples and
-105 held out, 9.6 min on a Tesla T4, final training loss 1.27, held-out loss 1.37, and the
-sha256 of `sft.jsonl` beginning `56096d55`.
+The run behind these numbers, from `train/outputs/koottam-student.run.json`: 1,989
+training examples and 105 held out, 9.6 min on a Tesla T4, final training loss 1.27,
+held-out loss 1.37, and the sha256 of `sft.jsonl` beginning `56096d55`.
+
+## Run 2: balance the injection lessons
+
+Run 1's student leans "safe" because 68% of its injection lessons said "safe". Run 2 keeps
+the recipe and fixes the mix.
+
+**What changes:**
+- **More injection questions.** The training pool has 536 injection questions, and run 1
+  only reached the 128 among its first 2,500 questions. `--all-injection` asks the council
+  about all 536.
+- **Equal answers.** `--balance` then keeps as many "safe" examples as "attack" ones, dropping
+  the latest of the commoner answer. The council answers without seeing any label, and the
+  balancing happens afterwards on its agreed answers. Here each kept answer also matches the
+  key, so that's the same as balancing on the true label.
+
+**What stays the same:** the base model, every notebook setting, the serving template, the
+616 test questions, and the cyber recipe (the first 2,500 questions). One small difference:
+the build also retried 62 calls that had failed in the first 2,500 (58 of them Gemma 31B), so
+cyber can gain a few examples.
+
+**It changes two things at once:** the mix (68% safe → 50%) and the amount of injection
+data. If attack recall comes back, this run can't say which of the two did it. A third run
+could separate them: balance only the first 2,500's injection questions, which leaves 37 of
+each.
+
+```bash
+python -m koottam build --limit 2500 --all-injection --balance   # ~2 h 45 min, Cerebras-paced
+```
+
+The build prints how evenly the filter kept each answer, before balancing:
+
+```text
+  injection kept per true answer: A …/…  B …/…
+```
+
+In the notebook's settings cell, set `STUDENT_NAME = "koottam-student-balanced"`,
+`EXPORT_BASE = False` and `EXPECTED_EXAMPLES` to the build's count, then run it as in step 2
+with the new `sft.jsonl`. Download only `koottam-student-balanced.Q8_0.gguf` and its
+`.run.json`; the base doesn't change. Then:
+
+```bash
+python -m koottam students                         # adds koottam-student-balanced
+python -m koottam eval --model student-balanced    # ~1 h
+python -m koottam compare student-koottam student-balanced
+python -m koottam compare student-base student-balanced
+```
+
+**What we'll check** (written down on 2026-10-02, before training):
+
+1. **Attacks caught** rise clearly from run 1's 37 of 60. This is the point of the run.
+2. **Safe texts recognised** stay close to run 1's 52 of 56. Giving all of that back would
+   just swap one lean for the other: the base caught 57 attacks by calling almost
+   everything an attack.
+3. **Injection overall** beats run 1's 76.7%. With only 116 questions, only a big change
+   will show a small p-value, so we report the flips either way.
+4. **Cyber barely moves.** Its recipe is the same, but a different-sized set reshuffles the
+   training order and the 5% held-out split, so the cyber difference measures run-to-run
+   noise. It's the control.
+5. **Claim 2 still holds** against the base.
 
 ## What's next
 
-- **Rebalance injection.** The training pool has 408 injection questions not yet used, 153
-  of them attacks. Draw on those, keep equal numbers of safe and attack examples, and
-  retrain. It works if attack recall comes
-  back without losing the gain on safe text.
 - **More cyber data.** The training set can grow towards ~3,000 examples, to see whether
   security knowledge moves at all at 1B.

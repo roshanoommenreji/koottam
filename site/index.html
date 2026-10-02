@@ -233,7 +233,7 @@ the same model untrained. Both are exported and served identically, so the weigh
     <p>Exact <em>and</em> near-duplicate (≥80% word overlap) removal between train and test. This
     caught a typo'd copy of a test question hiding in the training pool.</p></div>
   <div class="card"><h3>Built to be checked</h3>
-    <p>Python 3.11, pydantic v2, mypy strict, ruff, 25 offline tests. gitleaks runs pre-commit and
+    <p>Python 3.11, pydantic v2, mypy strict, ruff, 26 offline tests. gitleaks runs pre-commit and
     in CI over the full history.</p></div>
 </div>
 
@@ -246,7 +246,8 @@ the same model untrained. Both are exported and served identically, so the weigh
   <li><span class="done">Done</span>: LoRA fine-tune of Gemma 3 1B on a free GPU (9.6 min), with base
     and student exported and served identically (same GGUF path, same chat template)</li>
   <li><span class="done">Done</span>: claim 2 scored: 60.4% → 66.7%, supported; the gain is injection detection</li>
-  <li>Next: rebalance the injection examples so the student catches attacks again</li>
+  <li>In progress: run 2 rebalances the injection lessons (as many attacks as safe texts) so the
+    student catches attacks again. What counts as success was written down before training.</li>
 </ol>
 <p><strong>Scope, deliberately:</strong> defensive security and prompt-injection detection only. No
 offensive tooling in the training data.</p>

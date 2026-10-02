@@ -6,6 +6,8 @@
   eval --council [--limit]     score the council (reuses members' cached answers)
   eval --council --weighted    same, with votes weighted by data/weights.json
   build [--limit N]            council answers on train -> data/sft.jsonl
+        [--all-injection]      ... plus every injection question in the pool
+        [--balance]            ... with as many examples of each answer as the rarest
   weights [--limit N]          learn vote weights from members' answers on train
   students                     register the notebook's two GGUFs with Ollama (Lab 02)
   compare A B                  paired comparison of two scored systems, with significance
@@ -55,6 +57,8 @@ def main() -> None:
     e.add_argument("--weighted", action="store_true")
     b = sub.add_parser("build")
     b.add_argument("--limit", type=int)
+    b.add_argument("--all-injection", action="store_true")
+    b.add_argument("--balance", action="store_true")
     w = sub.add_parser("weights")
     w.add_argument("--limit", type=int, default=500)
     sub.add_parser("students")
@@ -79,7 +83,7 @@ def main() -> None:
     elif args.cmd == "build":
         from koottam.build import build
 
-        asyncio.run(build(config, args.limit))
+        asyncio.run(build(config, args.limit, args.all_injection, args.balance))
     elif args.cmd == "weights":
         from koottam.weights import learn
 

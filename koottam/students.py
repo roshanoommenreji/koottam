@@ -54,12 +54,18 @@ def gguf_for(ollama_name: str) -> Path:
 
 
 def serve(config: Config) -> None:
+    missing = []
     for name in config.students:
         model = config.model(name).model
         gguf = gguf_for(model)
         if not gguf.exists():
-            raise SystemExit(f"{gguf} missing: download it from the notebook run (Lab 02, step 3)")
+            missing.append(gguf.name)
+            continue
         mf = OUTPUTS / f"{model}.Modelfile"
         mf.write_text(modelfile(str(gguf.resolve())), encoding="utf-8")
         print(f"  ollama create {model}  ({gguf.name}, {gguf.stat().st_size / 1e9:.2f} GB)")
         subprocess.run(["ollama", "create", model, "-f", str(mf)], check=True)
+    if missing:
+        # Each notebook run adds one file, so a missing one is a run not done yet, not an error.
+        print(f"  skipped, not in {OUTPUTS} yet: {', '.join(missing)}"
+              " (download it from the notebook run, Lab 02 step 3)")

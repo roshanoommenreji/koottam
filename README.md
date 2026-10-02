@@ -79,6 +79,7 @@ python -m koottam students               # serve base + fine-tuned student in Ol
 python -m koottam eval --model student-base
 python -m koottam eval --model student-koottam
 python -m koottam compare student-base student-koottam   # paired, with significance
+python -m koottam build --limit 2500 --all-injection --balance   # run 2: balanced injection lessons
 ```
 
 ## Results
@@ -144,7 +145,8 @@ gain actually is:
 - **The training filter caused that lean.** It kept all 78 safe injection examples but only
   37 of 50 attacks, because the teachers disagree more about attacks, so 68% of the
   injection lessons said "safe". An agreement filter is not neutral about labels. For a
-  security detector, missing 23 of 60 attacks is the wrong trade; rebalancing is next.
+  security detector, missing 23 of 60 attacks is the wrong trade; run 2 rebalances it
+  ([Lab 02](docs/labs/02-distill.md#run-2-balance-the-injection-lessons)).
 - **It inherited the council's blind spots.** On cyber questions all four members got right
   it improved (69.5% → 73.3%); where two or fewer were right, it got worse (37.1% → 25.7%).
 - **None of it is format.** Each student wrote a parseable answer on 615 of 616 replies.
@@ -159,7 +161,7 @@ gain actually is:
 | 4. Build training set | ✅ 2,094 examples from the first 2,500 questions (2026-10-01); enough for the first fine-tune, may grow to ~3,000 later |
 | 5. LoRA fine-tune | ✅ done 2026-10-01: Gemma 3 1B, 9.6 min on a free Colab T4 ([notebook](train/finetune.ipynb)) |
 | 6. Evaluate the student | ✅ done 2026-10-02: 60.4% → 66.7%, claim 2 supported (p = 0.008); the gain is injection |
-| 7. Rebalance injection | ☐ next: equal safe and attack examples, so attack recall comes back |
+| 7. Rebalance injection | ⏳ started 2026-10-02: council on all 536 injection questions, then equal safe and attack examples ([Lab 02, run 2](docs/labs/02-distill.md#run-2-balance-the-injection-lessons)) |
 
 ## Cost
 

@@ -12,11 +12,18 @@ trust council agreement on its own.
 The training target is the reasoning of the first agreeing member in council order
 (strongest first), with its ANSWER line rewritten into one canonical form. The student
 learns to reason the council's way, not just to emit a letter.
+
+The filter is not neutral about answers. On injection, the council agrees easily that a
+text is safe and less often that it is an attack, so the first build kept 78 of 78 safe
+texts but 37 of 50 attacks, and the student learnt to lean "safe". Two options fix that:
+--all-injection asks about every injection question in the pool, not only those within
+--limit, and --balance then keeps as many examples of each answer as of the rarest one.
 """
 
 import json
 import random
 from collections import Counter
+from typing import Any
 
 import httpx
 
@@ -38,9 +45,36 @@ def train_order(pool: list[Question]) -> list[Question]:
     return order
 
 
-async def build(config: Config, limit: int | None) -> None:
+def answer_of(row: dict[str, Any]) -> str:
+    """The letter a training example teaches: its target always ends 'ANSWER: <letter>'."""
+    return str(row["messages"][-1]["content"]).rsplit("ANSWER: ", 1)[1]
+
+
+def balance(rows: list[dict[str, Any]], task: str) -> list[dict[str, Any]]:
+    """Every answer of `task` keeps as many examples as its rarest answer has; the latest
+    examples of the commoner answers are dropped. Other tasks' rows pass through."""
+    counts = Counter(answer_of(r) for r in rows if r["task"] == task)
+    if not counts:
+        return rows
+    cap = min(counts.values())
+    seen: Counter[str] = Counter()
+    kept = []
+    for r in rows:
+        if r["task"] == task:
+            seen[answer_of(r)] += 1
+            if seen[answer_of(r)] > cap:
+                continue
+        kept.append(r)
+    return kept
+
+
+async def build(config: Config, limit: int | None, all_injection: bool = False,
+                balanced: bool = False) -> None:
     pool = data.read("train")
-    questions = train_order(pool)[:limit] if limit else pool
+    order = train_order(pool)
+    questions = order[:limit] if limit else pool
+    if limit and all_injection:
+        questions += [q for q in order[limit:] if q.task == "injection"]
     print(f"building from {len(questions)} of {len(pool)} train questions")
 
     async with httpx.AsyncClient(timeout=180) as http:
@@ -58,6 +92,7 @@ async def build(config: Config, limit: int | None) -> None:
         agreed = v.choice is not None and v.agree >= config.min_agree
         correct = v.choice == q.answer
         stats[f"{q.task}:total"] += 1
+        stats[f"{q.task}:{q.answer}:total"] += 1
         if agreed and not correct:
             stats[f"{q.task}:agreed_but_wrong"] += 1
         if not (agreed and correct):
@@ -83,6 +118,19 @@ async def build(config: Config, limit: int | None) -> None:
             ],
         })
         stats[f"{q.task}:kept"] += 1
+        stats[f"{q.task}:{q.answer}:kept"] += 1
+
+    # Two-option tasks: show how evenly the filter kept each answer, and even it out.
+    two_way = sorted({q.task for q in questions if len(q.options) == 2})
+    for task in two_way:
+        options = sorted({q.answer for q in questions if q.task == task})
+        print(f"  {task} kept per true answer: " + "  ".join(
+            f"{a} {stats[f'{task}:{a}:kept']}/{stats[f'{task}:{a}:total']}" for a in options))
+        if balanced:
+            before = len(rows)
+            rows = balance(rows, task)
+            print(f"  {task} balanced: dropped the latest {before - len(rows)} examples of the"
+                  f" commoner answer, leaving {sum(r['task'] == task for r in rows)}")
 
     SFT.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
                    encoding="utf-8")

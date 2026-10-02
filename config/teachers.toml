@@ -93,6 +93,16 @@ rpm = 60
 concurrency = 1
 extra = { reasoning_effort = "none" }
 
+# Run 2 (Lab 02, "Run 2"): the same recipe, but the injection lessons are balanced, as many
+# "attack" as "safe" examples. Run 1's lessons were 68% "safe", and the student leaned that way.
+[students.student-balanced]
+provider = "ollama"
+base_url = "http://localhost:11434/v1"
+model = "koottam-student-balanced"
+rpm = 60
+concurrency = 1
+extra = { reasoning_effort = "none" }
+
 [council]
 members = ["gpt-oss", "qwen-27b", "gemma-31b", "gemma-local"]
 # A training example is kept only when at least this many members agree
