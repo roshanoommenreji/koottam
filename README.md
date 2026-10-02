@@ -161,7 +161,7 @@ gain actually is:
 | 4. Build training set | ✅ 2,094 examples from the first 2,500 questions (2026-10-01); enough for the first fine-tune, may grow to ~3,000 later |
 | 5. LoRA fine-tune | ✅ done 2026-10-01: Gemma 3 1B, 9.6 min on a free Colab T4 ([notebook](train/finetune.ipynb)) |
 | 6. Evaluate the student | ✅ done 2026-10-02: 60.4% → 66.7%, claim 2 supported (p = 0.008); the gain is injection |
-| 7. Rebalance injection | ⏳ started 2026-10-02: council on all 536 injection questions, then equal safe and attack examples ([Lab 02, run 2](docs/labs/02-distill.md#run-2-balance-the-injection-lessons)) |
+| 7. Rebalance injection | ⏳ 2026-10-02: lesson book rebuilt (2,298 lessons, injection 153 safe + 153 attack); retrain and re-score next ([Lab 02, run 2](docs/labs/02-distill.md#run-2-balance-the-injection-lessons)) |
 
 ## Cost
 

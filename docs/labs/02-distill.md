@@ -246,8 +246,11 @@ could separate them: balance only the first 2,500's injection questions, which l
 each.
 
 ```bash
-python -m koottam build --limit 2500 --all-injection --balance   # ~2 h 45 min, Cerebras-paced
+python -m koottam build --limit 2500 --all-injection --balance   # ~3 h, Cerebras-paced
 ```
+
+Free servers fail some calls, and failures aren't cached, so run the same command a second time to
+retry only those. Everything else comes from the cache.
 
 The build prints how evenly the filter kept each answer, before balancing:
 
@@ -255,9 +258,10 @@ The build prints how evenly the filter kept each answer, before balancing:
   injection kept per true answer: A …/…  B …/…
 ```
 
-In the notebook's settings cell, set `STUDENT_NAME = "koottam-student-balanced"`,
-`EXPORT_BASE = False` and `EXPECTED_EXAMPLES` to the build's count, then run it as in step 2
-with the new `sft.jsonl`. Download only `koottam-student-balanced.Q8_0.gguf` and its
+The notebook is already set for this run: `STUDENT_NAME = "koottam-student-balanced"`,
+`EXPORT_BASE = False`, and the file it must use (`EXPECTED_EXAMPLES`, `EXPECTED_SHA256_PREFIX`).
+If you upload any other `sft.jsonl`, the data cell stops with an error instead of training on it.
+Run it as in step 2 with the new `sft.jsonl`. Download only `koottam-student-balanced.Q8_0.gguf` and its
 `.run.json`; the base doesn't change. Then:
 
 ```bash
@@ -279,6 +283,11 @@ python -m koottam compare student-base student-balanced
    training order and the 5% held-out split, so the cyber difference measures run-to-run
    noise. It's the control.
 5. **Claim 2 still holds** against the base.
+
+**What the build gave us** (2026-10-02): the council answered all 536 injection questions, and the filter kept
+331 of 333 safe texts but only 153 of 203 attacks. Balancing keeps all 153 attacks and the first 153 safe
+texts. The file has **2,298 lessons**: 1,992 cyber and 306 injection (153 + 153), sha256 `2e660996…`. Nine
+Gemma 31B calls still failed after a retry, so those questions have three votes, not four.
 
 ## What's next
 
