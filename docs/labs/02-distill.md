@@ -197,8 +197,8 @@ total:
   points, with 71 gained and 64 lost, which is what chance looks like (p = 0.61). Two
   epochs on ~2,000 answers changed how the 1B model *behaves*, not what it *knows*.
 - **The base wasn't detecting injection at all.** It called 113 of 116 texts an attack, so
-  it caught 57 of 60 attacks and recognised 0 of 56 safe texts. Its 49.1% is simply the
-  share of attacks in the test set. The student recognises 52 of 56 safe texts, but now
+  it caught 57 of 60 attacks and recognised 0 of 56 safe texts. Its 49.1% is about what
+  always answering "attack" earns (attacks are 51.7% of the test set). The student recognises 52 of 56 safe texts, but now
   catches only 37 of 60 attacks.
 - **The training filter made the student lean "safe".** The first 2,500 training questions
   held 128 injection questions: 78 safe and 50 attacks. The filter kept all 78 safe ones
@@ -288,6 +288,46 @@ python -m koottam compare student-base student-balanced
 331 of 333 safe texts but only 153 of 203 attacks. Balancing keeps all 153 attacks and the first 153 safe
 texts. The file has **2,298 lessons**: 1,992 cyber and 306 injection (153 + 153), sha256 `2e660996…`. Nine
 Gemma 31B calls still failed after a retry, so those questions have three votes, not four.
+
+## Run 2: what we got
+
+Scored 2026-10-02 (616 questions, ~1 h; `python -m koottam compare ...`). The student trained for
+10.7 min on 2,183 lessons (115 held out), held-out loss 1.29, and 30 of 40 held-out answers matched the
+council. All 616 test replies parsed.
+
+| Student | Cyber (500) | Injection (116) | Overall |
+|---|---|---|---|
+| Base | 63.0% | 49.1% | 60.4% |
+| Run 1 | 64.4% | 76.7% | 66.7% |
+| **Run 2 (balanced)** | 63.8% | **89.7%** | **68.7%** |
+
+Injection per true answer: **attacks caught 51 of 60** (run 1: 37), **safe texts recognised 53 of 56**
+(run 1: 52). With attack as the positive class, precision is 94% (51 of 54 flags were real) and recall
+85%, against run 1's 90% and 62%.
+
+**Against the success checks written before training:**
+
+1. Attacks caught rose clearly from 37/60 to 51/60. **Met.**
+2. Safe texts stayed close to 52/56 (now 53/56). **Met.** Nothing was swapped for something else.
+3. Injection beat 76.7%: 89.7%, 18 questions gained and 3 lost against run 1 (p = 0.0015). **Met.**
+4. Cyber barely moved: 64.4% → 63.8%, 33 gained and 36 lost (p = 0.81). **Met.** That is the
+   run-to-run noise, as expected from an unchanged cyber recipe.
+5. Claim 2 holds: 60.4% → 68.7% against the base, 117 gained and 66 lost (p = 0.0002; 95% interval
+   +4.1 to +12.5).
+
+**What the data does not show:**
+- Run 2 vs run 1 overall is +1.9 points, 95% interval −1.0 to +4.9, p = 0.25. The whole difference is
+  injection; overall it is not a significant gain over run 1.
+- It changed the mix **and** the amount of injection data (306 lessons against 115) at once, so this
+  run can't say which of the two did the work. The third run suggested above would separate them.
+- One training run each. We have no measured spread for retraining, only the cyber control.
+- Cyber's blind spot remains: where two or fewer members were right, the student scores 25.7%
+  (the base 37.1%). Distillation still copies the council's mistakes.
+- Only 116 injection questions, so an interval on 104 right is wide. Treat 89.7% as "clearly better than 76.7%",
+  not as a precise figure.
+
+Where the new lessons helped most: injection questions the council mostly got wrong (two or fewer
+right) went from 34.8% to 73.9%, and "3 of 4 right" from 64% to 84%.
 
 ## What's next
 

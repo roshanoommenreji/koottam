@@ -207,14 +207,17 @@ the same model untrained. Both are exported and served identically, so the weigh
     happen by chance 0.8% of the time (exact McNemar test). The gain is +6.3 points, 95% interval +1.8 to +11.0.</p></div></div>
   <div class="finding"><div class="big">113/116</div>
     <div><h3>The base was crying wolf</h3>
-    <p>Untrained, it called 113 of 116 texts a prompt injection, so its 49.1% on injection was just
-    the share of attacks. Trained, it recognises 52 of 56 safe texts: injection rose to 76.7%. Security
+    <p>Untrained, it called 113 of 116 texts a prompt injection, so its 49.1% on injection was about
+    what always answering "attack" earns. Trained, it recognises 52 of 56 safe texts: injection rose to 76.7%. Security
     knowledge barely moved (+1.4 points, p = 0.61). The fine-tune changed behaviour, not knowledge. In detection terms, precision (how many flags were real) went from 50% to 90%, while recall (how many attacks were caught) went from 95% to 62%.</p></div></div>
   <div class="finding"><div class="big">37/60</div>
     <div><h3>The filter taught it to lean "safe"</h3>
     <p>The agreement filter kept all 78 safe injection examples but only 37 of 50 attacks, because
     models disagree more about attacks. Trained on 68% "safe", the student now misses 23 of 60 real
-    attacks: 62% recall. <em>An agreement filter is not neutral about labels.</em> Run 2 rebalances it, and its first pass mark is recall clearly above 62% with precision near 90%.</p></div></div>
+    attacks: 62% recall. <em>An agreement filter is not neutral about labels.</em> Run 2 rebalanced it, and the lean went away: attacks caught rose from 37 to 51 of 60 (recall 85%, precision 94%) and injection reached 89.7%.</p></div></div>
+  <div class="finding"><div class="big">89.7%</div>
+    <div><h3>Run 2: balanced lessons fixed it</h3>
+    <p>With as many attack lessons as safe ones (153 each), the student kept recognising safe texts (53 of 56) and now catches 51 of 60 attacks. Injection rose from 76.7% to 89.7% (18 gained, 3 lost, p = 0.0015). Security knowledge stayed flat (64.4% → 63.8%, p = 0.81), which shows the size of run-to-run noise. Against the base, claim 2 still holds: 60.4% → 68.7%, p = 0.0002. Caveats: overall the gain over run 1 is +1.9 points and not significant (p = 0.25); the run changed the mix and the amount of injection data together; and it is one training run.</p></div></div>
   <div class="finding"><div class="big">−11 pts</div>
     <div><h3>It inherits the council's blind spots</h3>
     <p>On security questions all four members got right, the student improved (69.5% → 73.3%). Where
@@ -246,8 +249,8 @@ the same model untrained. Both are exported and served identically, so the weigh
   <li><span class="done">Done</span>: LoRA fine-tune of Gemma 3 1B on a free GPU (9.6 min), with base
     and student exported and served identically (same GGUF path, same chat template)</li>
   <li><span class="done">Done</span>: claim 2 scored: 60.4% → 66.7%, supported; the gain is injection detection</li>
-  <li>In progress: run 2 rebalances the injection lessons (as many attacks as safe texts) so the
-    student catches attacks again. What counts as success was written down before training.</li>
+  <li><span class="done">Done</span>: run 2 rebalanced the injection lessons (as many attacks as safe texts):
+    attacks caught 37 → 51 of 60, injection 76.7% → 89.7%, cyber flat. Every pass mark was written down before training and all five were met.</li>
 </ol>
 <p><strong>Scope, deliberately:</strong> defensive security and prompt-injection detection only. No
 offensive tooling in the training data.</p>

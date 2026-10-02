@@ -146,10 +146,27 @@ gain actually is:
   37 of 50 attacks, because the teachers disagree more about attacks, so 68% of the
   injection lessons said "safe". An agreement filter is not neutral about labels. For a
   security detector, missing 23 of 60 attacks is the wrong trade; run 2 rebalances it
-  ([Lab 02](docs/labs/02-distill.md#run-2-balance-the-injection-lessons)).
+  ([Lab 02](docs/labs/02-distill.md#run-2-balance-the-injection-lessons)) and fixes it, below.
 - **It inherited the council's blind spots.** On cyber questions all four members got right
   it improved (69.5% → 73.3%); where two or fewer were right, it got worse (37.1% → 25.7%).
 - **None of it is format.** Each student wrote a parseable answer on 615 of 616 replies.
+
+**Run 2 (balanced lessons): the lean is fixed.** Same recipe, but the council asked about all 536 injection
+questions and the lessons balanced to 153 safe + 153 attack (2,298 in all). Scored against the checks
+written beforehand:
+
+| Student | Cyber | Injection | Overall | Attacks caught | Safe recognised |
+|---|---|---|---|---|---|
+| Base | 63.0% | 49.1% | 60.4% | 57/60 | 0/56 |
+| Run 1 | 64.4% | 76.7% | 66.7% | 37/60 | 52/56 |
+| **Run 2** | 63.8% | **89.7%** | **68.7%** | **51/60** | 53/56 |
+
+Injection precision is 94% and recall 85% (run 1: 90% and 62%). Claim 2 still holds against the base
+(60.4% → 68.7%, p = 0.0002). Cyber stayed flat (p = 0.81), which is the control for run-to-run noise.
+Caveats: run 2 vs run 1 overall is +1.9 points and not significant (p = 0.25); the whole difference is
+injection. The run changed the mix and the amount of injection data together, so it can't say which
+mattered, and each student is one training run.
+[Details and every check](docs/labs/02-distill.md#run-2-what-we-got).
 
 ## Progress
 
@@ -161,7 +178,7 @@ gain actually is:
 | 4. Build training set | ✅ 2,094 examples from the first 2,500 questions (2026-10-01); enough for the first fine-tune, may grow to ~3,000 later |
 | 5. LoRA fine-tune | ✅ done 2026-10-01: Gemma 3 1B, 9.6 min on a free Colab T4 ([notebook](train/finetune.ipynb)) |
 | 6. Evaluate the student | ✅ done 2026-10-02: 60.4% → 66.7%, claim 2 supported (p = 0.008); the gain is injection |
-| 7. Rebalance injection | ⏳ 2026-10-02: lesson book rebuilt (2,298 lessons, injection 153 safe + 153 attack); retrain and re-score next ([Lab 02, run 2](docs/labs/02-distill.md#run-2-balance-the-injection-lessons)) |
+| 7. Rebalance injection | ✅ done 2026-10-02: 2,298 lessons (injection 153 safe + 153 attack), retrained and re-scored: injection 76.7% → 89.7%, attacks caught 37 → 51 of 60, cyber flat ([Lab 02, run 2](docs/labs/02-distill.md#run-2-what-we-got)) |
 
 ## Cost
 
