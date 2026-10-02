@@ -179,3 +179,14 @@ def test_mcnemar_counts_only_flips() -> None:
     assert mcnemar(71, 64) > 0.5  # a near-even split is what chance looks like
     lo, hi = bootstrap([1] * 10 + [0] * 90, rounds=2000)
     assert 0 < lo < 0.1 < hi
+
+
+def test_precision_recall_f1() -> None:
+    from koottam.compare import precision_recall
+
+    # Run 2's injection counts: 51 attacks caught, 3 false alarms, 9 missed.
+    precision, recall, f1 = precision_recall(51, 3, 9)
+    assert precision == pytest.approx(51 / 54)
+    assert recall == pytest.approx(51 / 60)
+    assert f1 == pytest.approx(2 * precision * recall / (precision + recall))
+    assert precision_recall(0, 0, 0) == (0.0, 0.0, 0.0)  # nothing flagged, nothing to find

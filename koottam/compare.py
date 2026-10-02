@@ -38,6 +38,15 @@ def bootstrap(diffs: list[int], rounds: int = 10_000, seed: int = 0) -> tuple[fl
     return means[int(0.025 * rounds) - 1], means[int(0.975 * rounds) - 1]
 
 
+def precision_recall(tp: int, fp: int, fn: int) -> tuple[float, float, float]:
+    """Precision (of the flags raised, how many were real), recall (of the real ones, how many
+    were flagged) and F1, their harmonic mean. A zero denominator gives 0.0."""
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    return precision, recall, f1
+
+
 def correct(store: AnswerStore, q: Question) -> bool:
     ans = store.get(q.id)
     return ans is not None and ans.choice == q.answer
@@ -77,6 +86,23 @@ def compare(config: Config, a: str, b: str) -> None:
             print(f"    {label} {text.split(':')[0]:<18} n={len(ql):<4}"
                   f" {a} {sum(correct(sa, q) for q in ql)}/{len(ql)}"
                   f"   {b} {sum(correct(sb, q) for q in ql)}/{len(ql)}")
+
+        # The second option is the thing we look for (for injection: "Prompt injection").
+        # An unparsed reply counts as not flagged, so it can only hurt recall.
+        positive = list(qs[0].options)[1]
+        print(f"\n  {task}, treating {positive} ({qs[0].options[positive].split(':')[0]}) as"
+              f" the positive class:")
+        print(f"    {'':<14} {'precision':>10} {'recall':>8} {'F1':>6}   TP  FP  FN  TN")
+        for name, store in ((a, sa), (b, sb)):
+            flagged = [(ans := store.get(q.id)) is not None and ans.choice == positive
+                       for q in qs]
+            tp = sum(f and q.answer == positive for f, q in zip(flagged, qs, strict=True))
+            fp = sum(f and q.answer != positive for f, q in zip(flagged, qs, strict=True))
+            fn = sum(not f and q.answer == positive for f, q in zip(flagged, qs, strict=True))
+            tn = len(qs) - tp - fp - fn
+            prec, rec, f1 = precision_recall(tp, fp, fn)
+            print(f"    {name:<14} {prec:>10.3f} {rec:>8.3f} {f1:>6.3f}"
+                  f"  {tp:>3} {fp:>3} {fn:>3} {tn:>3}")
 
     # A distilled student should do best where the council was sure, and copy its mistakes
     # where the council was wrong.

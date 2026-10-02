@@ -156,8 +156,9 @@ python -m koottam compare student-base student-koottam
 answered the same questions, so it counts the *flips* (questions only one of them got
 right) and runs McNemar's exact test on them: if the students were equally good, each flip
 would be a coin toss. It also prints a 95% bootstrap interval for the difference, splits
-injection by true answer, and splits every question by how many council members got it
-right. It reads cached answers only, so it's instant and free.
+injection by true answer, prints injection's precision, recall and F1 (attack is the positive
+class, with the raw TP/FP/FN/TN counts), and splits every question by how many council members got
+it right. It reads cached answers only, so it's instant and free.
 
 Claim 2 holds if `student-koottam` beats `student-base` overall and the p-value is small
 (below 0.05). We wrote down what to check before seeing the result:

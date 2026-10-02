@@ -40,7 +40,7 @@ git clone <this repo> koottam && cd koottam
 uv venv -p 3.11 .venv
 uv pip install -e ".[dev]"
 git config core.hooksPath .githooks
-python -m pytest -q                      # 26 offline tests, no network needed
+python -m pytest -q                      # 27 offline tests, no network needed
 ```
 
 API keys. All are free tiers, but **Cerebras needs a card on file** (checked 2026-09-27):
