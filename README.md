@@ -5,9 +5,11 @@
 
 **Showcase page: [roshanoommenreji.github.io/koottam](https://roshanoommenreji.github.io/koottam/)**
 
-> **Status:** claim 1 is measured (the council does *not* beat its best member: 93.5% vs
-> 94.3%, see [Results](#results)). Claim 2 is in progress: 2,094 training examples are
-> built, and the student (Gemma 3 1B) fine-tune notebook is ready to run.
+> **Status:** both claims are measured, see [Results](#results).
+> 1. The council does *not* beat its best member: 93.5% vs 94.3%.
+> 2. The fine-tuned student *does* beat its untrained self: 66.7% vs 60.4% (p = 0.008).
+>    Almost all of that gain is prompt-injection detection, and it came with a lean towards
+>    "safe" that the training filter caused.
 
 *Koottam* (കൂട്ടം) is Malayalam for "a gathering". This repo gathers several AI models,
 each on a different server, into a council, and then distils what the council knows into
@@ -76,11 +78,13 @@ python -m koottam build --limit 2500     # training set from the council
 python -m koottam students               # serve base + fine-tuned student in Ollama
 python -m koottam eval --model student-base
 python -m koottam eval --model student-koottam
+python -m koottam compare student-base student-koottam   # paired, with significance
 ```
 
 ## Results
 
-Full held-out test set, 2026-09-27. Every member answered all 616 questions.
+Full held-out test set: members and council scored 2026-09-27/28, students 2026-10-02.
+Every system answered all 616 questions.
 
 | System | Cyber (500) | Injection (116) | Overall |
 |---|---|---|---|
@@ -90,8 +94,8 @@ Full held-out test set, 2026-09-27. Every member answered all 616 questions.
 | Gemma 4 E2B (laptop) | 84.4% | 81.0% | 83.8% |
 | **Council**, equal votes (tie-breaker on 19 ties) | 95.2% | 82.8% | **92.9%** |
 | **Council**, weighted votes (learned on train) | 95.6% | 84.5% | **93.5%** |
-| Student, base (Gemma 3 1B) | – | – | – |
-| **Student, fine-tuned** (Gemma 3 1B + LoRA) | – | – | – |
+| Student, base (Gemma 3 1B) | 63.0% | 49.1% | 60.4% |
+| **Student, fine-tuned** (Gemma 3 1B + LoRA) | 64.4% | 76.7% | **66.7%** |
 
 *(Equal votes first scored 92.7%; a re-score from cache reached 92.9% because one failed
 tie-break was asked again and came out right.)*
@@ -123,6 +127,28 @@ CyberMetric-500 test set.
 This doesn't block distillation. The training filter keeps an example only when ≥3 members
 agree **and** the key agrees, so the student learns from answers that are correct either way.
 
+**Claim 2, "the student beats its untrained self": supported, overall.** The same Gemma 3 1B,
+LoRA-trained for 9.6 minutes on a free T4 with 2,094 council-agreed answers, went from 60.4%
+to 66.7%. Both students answered the same questions, so the test is paired: the student
+gained 123 questions and lost 84, a split that uneven would happen by chance 0.8% of the
+time (exact McNemar test; 95% interval +1.8 to +11.0 points).
+`python -m koottam compare student-base student-koottam` reproduces these numbers. What the
+gain actually is:
+
+- **Nearly all of it is prompt-injection detection** (49.1% → 76.7%, p = 0.0002). Security
+  knowledge barely moved (63.0% → 64.4%: 71 gained, 64 lost, p = 0.61). The fine-tune
+  changed how the 1B model behaves, not what it knows.
+- **The base flagged almost everything as an attack**: 113 of 116 texts. It caught 57/60
+  attacks and recognised 0/56 safe texts. The student recognises 52/56 safe texts but
+  catches only 37/60 attacks.
+- **The training filter caused that lean.** It kept all 78 safe injection examples but only
+  37 of 50 attacks, because the teachers disagree more about attacks, so 68% of the
+  injection lessons said "safe". An agreement filter is not neutral about labels. For a
+  security detector, missing 23 of 60 attacks is the wrong trade; rebalancing is next.
+- **It inherited the council's blind spots.** On cyber questions all four members got right
+  it improved (69.5% → 73.3%); where two or fewer were right, it got worse (37.1% → 25.7%).
+- **None of it is format.** Each student wrote a parseable answer on 615 of 616 replies.
+
 ## Progress
 
 | Step | Status |
@@ -131,13 +157,14 @@ agree **and** the key agrees, so the student learns from answers that are correc
 | 2. Baselines per member | ✅ done 2026-09-27 |
 | 3. Council score | ✅ done 2026-09-27: council 92.7% < best member 94.3% |
 | 4. Build training set | ✅ 2,094 examples from the first 2,500 questions (2026-10-01); enough for the first fine-tune, may grow to ~3,000 later |
-| 5. LoRA fine-tune | ◐ student chosen (Gemma 3 1B), [notebook](train/finetune.ipynb) and Ollama serving ready (2026-10-01); GPU run next |
-| 6. Evaluate the student | ☐ |
+| 5. LoRA fine-tune | ✅ done 2026-10-01: Gemma 3 1B, 9.6 min on a free Colab T4 ([notebook](train/finetune.ipynb)) |
+| 6. Evaluate the student | ✅ done 2026-10-02: 60.4% → 66.7%, claim 2 supported (p = 0.008); the gain is injection |
+| 7. Rebalance injection | ☐ next: equal safe and attack examples, so attack recall comes back |
 
 ## Cost
 
-Free tiers plus the laptop. The only possible spend is one rented-GPU fine-tune (~$1–3) if
-the free Kaggle/Colab GPUs aren't enough. Ceiling: **$10 total**.
+Free tiers plus the laptop. The fine-tune ran on a free Colab T4, so no GPU was rented.
+Ceiling: **$10 total**.
 
 ## Scope, deliberately
 

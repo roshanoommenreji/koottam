@@ -150,3 +150,14 @@ def test_students_are_served_identically() -> None:
     assert [f.split("\n", 1)[1] for f in files][0] == [f.split("\n", 1)[1] for f in files][1]
     assert gguf_for("koottam-student").name == "koottam-student.Q8_0.gguf"  # notebook's name
     assert r'"<start_of_turn>user\n" }}{{ .Content }}{{ "\n\n" }}' in files[0]  # system folded in
+
+
+def test_mcnemar_counts_only_flips() -> None:
+    from koottam.compare import bootstrap, mcnemar
+
+    assert mcnemar(0, 0) == 1.0  # no flips: no evidence either way
+    assert mcnemar(10, 0) == pytest.approx(2 / 2**10)  # 10 of 10 flips one way: rare
+    assert mcnemar(52, 20) == mcnemar(20, 52) < 0.001  # two-sided: direction doesn't matter
+    assert mcnemar(71, 64) > 0.5  # a near-even split is what chance looks like
+    lo, hi = bootstrap([1] * 10 + [0] * 90, rounds=2000)
+    assert 0 < lo < 0.1 < hi

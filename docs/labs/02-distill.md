@@ -3,7 +3,7 @@
 **Goal:** fine-tune a small model on the council's answers and measure whether it beats the
 same model untrained (claim 2).
 
-**Time:** ~30 min hands-on, ~20 min on a free cloud GPU, then ~5 h of unattended scoring on
+**Time:** ~30 min hands-on, ~20 min on a free cloud GPU, then ~2 h of unattended scoring on
 the laptop. **Cost:** $0 (free Colab or Kaggle T4).
 
 Prerequisite: [Lab 01](01-council.md), through `python -m koottam build`, which wrote
@@ -133,19 +133,30 @@ anything but their `FROM` line.
 
 ```bash
 python -m koottam eval --model student-base --limit 20      # smoke test first
-python -m koottam eval --model student-base                 # ~2.5 h on a laptop CPU
-python -m koottam eval --model student-koottam              # ~2.5 h
+python -m koottam eval --model student-base                 # ~1 h on a laptop CPU
+python -m koottam eval --model student-koottam              # ~1 h
 ```
 
-Measured on 2026-10-01: ~13 s per question for Gemma 3 1B on this laptop's CPU. Run them
-one after the other, not in parallel: they share one CPU, so running both at once just
-makes each slower. Like every eval, both resume from cache if interrupted, so you can
+Measured on 2026-10-02: ~6 to 7 s per question for each Q8_0 student on this laptop's CPU,
+about an hour per student. Run them one after the other, not in parallel: they share one
+CPU, so running both at once just makes each slower. Like every eval, both resume from cache if interrupted, so you can
 rerun a command after a crash or a failed call.
 
 ## 6. Read the result
 
-Compare the two rows in `results.csv`. Claim 2 holds if `student-koottam` beats
-`student-base` overall. Also check these:
+```bash
+python -m koottam compare student-base student-koottam
+```
+
+`results.csv` has each student's score. `compare` says whether the gap is real. Both students
+answered the same questions, so it counts the *flips* (questions only one of them got
+right) and runs McNemar's exact test on them: if the students were equally good, each flip
+would be a coin toss. It also prints a 95% bootstrap interval for the difference, splits
+injection by true answer, and splits every question by how many council members got it
+right. It reads cached answers only, so it's instant and free.
+
+Claim 2 holds if `student-koottam` beats `student-base` overall and the p-value is small
+(below 0.05). We wrote down what to check before seeing the result:
 
 - **Per task.** Injection is only 115 of the 2,094 examples (5.5%). The student may improve on
   cyber and not on injection; if so, that's a data-balance finding, not noise.
@@ -158,4 +169,59 @@ Compare the two rows in `results.csv`. Claim 2 holds if `student-koottam` beats
 
 ## What we got
 
-*Pending: the notebook run and both evals.*
+Scored 2026-10-02 on all 616 test questions:
+
+| Student | Cyber (500) | Injection (116) | Overall |
+|---|---|---|---|
+| Base (Gemma 3 1B) | 63.0% | 49.1% | 60.4% |
+| **Fine-tuned** (Gemma 3 1B + LoRA) | 64.4% | 76.7% | **66.7%** |
+
+```text
+  task          n     student-base  student-koottam  gained  lost  p (McNemar)
+  cyber       500            0.630            0.644      71    64  0.6057
+  injection   116            0.491            0.767      52    20  0.0002
+  all         616            0.604            0.667     123    84  0.0081
+
+  student-koottam minus student-base: +6.3 points (95% interval +1.8 to +11.0)
+```
+
+**Claim 2 holds, overall.** The student gained 123 questions and lost 84; a split that
+uneven would happen by chance less than 1% of the time. But read the rows, not just the
+total:
+
+- **The gain is injection, the opposite of what we expected above.** Cyber moved 1.4
+  points, with 71 gained and 64 lost, which is what chance looks like (p = 0.61). Two
+  epochs on ~2,000 answers changed how the 1B model *behaves*, not what it *knows*.
+- **The base wasn't detecting injection at all.** It called 113 of 116 texts an attack, so
+  it caught 57 of 60 attacks and recognised 0 of 56 safe texts. Its 49.1% is simply the
+  share of attacks in the test set. The student recognises 52 of 56 safe texts, but now
+  catches only 37 of 60 attacks.
+- **The training filter made the student lean "safe".** The first 2,500 training questions
+  held 128 injection questions: 78 safe and 50 attacks. The filter kept all 78 safe ones
+  but only 37 of the 50 attacks, because the teachers disagree more about attacks. So 68%
+  of the injection examples (78 of 115) said "safe", and the student learned that. **An
+  agreement filter is not neutral about labels:** it keeps the easy class and drops the
+  hard one. For a security detector, missing 23 of 60 attacks is the wrong trade.
+- **It learned the council's mistakes too.** On cyber questions all four members got
+  right, the student improved (69.5% → 73.3%); where two or fewer were right, it got worse
+  (37.1% → 25.7%). A distilled student inherits its teachers' blind spots along with their
+  knowledge.
+- **None of it is format.** Each student wrote a parseable `ANSWER:` line on 615 of 616
+  replies. What changed is the order: the base usually names its answer first ("The correct
+  answer is …") and then justifies it; the student always reasons first, like the training
+  answers. Its reasoning is often weak (it once called "123456" a strong password).
+- **Against the teachers:** it closed 19% of the gap from base to the weighted council (6.3
+  of 33.1 points). Gemma 4 E2B, the council's laptop member, scores 83.8%.
+
+The run behind these numbers, from `train/outputs/run.json`: 1,989 training examples and
+105 held out, 9.6 min on a Tesla T4, final training loss 1.27, held-out loss 1.37, and the
+sha256 of `sft.jsonl` beginning `56096d55`.
+
+## What's next
+
+- **Rebalance injection.** The training pool has 408 injection questions not yet used, 153
+  of them attacks. Draw on those, keep equal numbers of safe and attack examples, and
+  retrain. It works if attack recall comes
+  back without losing the gain on safe text.
+- **More cyber data.** The training set can grow towards ~3,000 examples, to see whether
+  security knowledge moves at all at 1B.

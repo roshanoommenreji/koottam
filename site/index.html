@@ -51,6 +51,7 @@ a { color: var(--accent); }
 .badge { display: inline-block; font-size: 0.78rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; margin-bottom: 8px; }
 .badge.no { background: var(--warm-soft); color: var(--warm); }
 .badge.wip { background: var(--accent-soft); color: var(--accent); }
+.badge.yes { background: var(--good-soft); color: var(--good); }
 .figure { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-x: auto; }
 .figure svg { display: block; width: 100%; min-width: 560px; height: auto; }
 .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
@@ -63,9 +64,9 @@ tr.best td { background: var(--good-soft); }
 tr.council td { font-weight: 600; }
 .note { color: var(--muted); font-size: 0.9rem; margin-top: 10px; }
 .findings { display: grid; gap: 14px; }
-.finding { display: grid; grid-template-columns: 88px 1fr; gap: 16px; align-items: start; }
+.finding { display: grid; grid-template-columns: 124px 1fr; gap: 16px; align-items: start; }
 .big { font-size: 1.75rem; font-weight: 700; color: var(--accent); line-height: 1.1; font-variant-numeric: tabular-nums; }
-.eng { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.eng { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
 .eng p { color: var(--muted); font-size: 0.95rem; margin: 0; }
 code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
 ol.road { padding-left: 20px; }
@@ -89,6 +90,7 @@ Nothing is assumed. Each claim is scored on held-out questions.</p>
 <div class="links">
   <a class="btn primary" href="https://github.com/roshanoommenreji/koottam">Code on GitHub</a>
   <a class="btn" href="https://github.com/roshanoommenreji/koottam/blob/main/docs/labs/01-council.md">Lab 01: rebuild it</a>
+  <a class="btn" href="https://github.com/roshanoommenreji/koottam/blob/main/docs/labs/02-distill.md">Lab 02: distil it</a>
   <a class="btn" href="https://github.com/roshanoommenreji/koottam/tree/main/docs/journal">Build journal</a>
 </div>
 
@@ -99,10 +101,10 @@ Nothing is assumed. Each claim is scored on held-out questions.</p>
     <p>Weighted council 93.5% vs the best member's 94.3%. It beats three of four members, but not the best.</p>
   </div>
   <div class="card">
-    <span class="badge wip">In progress</span>
+    <span class="badge yes">Measured: supported</span>
     <h3>2. A small model trained on the council beats its untrained self</h3>
-    <p>2,094 training examples from the council's answers. The student is Gemma 3 1B; the LoRA
-    notebook is ready to run on a free GPU.</p>
+    <p>Gemma 3 1B went from 60.4% to 66.7% on the same 616 questions (p = 0.008). Almost all of
+    the gain is prompt-injection detection.</p>
   </div>
 </div>
 
@@ -163,10 +165,13 @@ examples (is this text an attack on an AI assistant?). No test question, or near
     <tr><td>Gemma 4 E2B (laptop)</td><td class="n">84.4%</td><td class="n">81.0%</td><td class="n">83.8%</td></tr>
     <tr class="council"><td>Council, equal votes</td><td class="n">95.2%</td><td class="n">82.8%</td><td class="n">92.9%</td></tr>
     <tr class="council"><td>Council, weighted votes</td><td class="n">95.6%</td><td class="n">84.5%</td><td class="n">93.5%</td></tr>
+    <tr><td>Student, base: Gemma 3 1B</td><td class="n">63.0%</td><td class="n">49.1%</td><td class="n">60.4%</td></tr>
+    <tr class="council"><td>Student, fine-tuned on the council</td><td class="n">64.4%</td><td class="n">76.7%</td><td class="n">66.7%</td></tr>
   </tbody>
 </table>
 </div>
-<p class="note">Scored 2026-09-27 and 2026-09-28. Every member answered all 616 questions.</p>
+<p class="note">Members and council scored 2026-09-27 and 2026-09-28, students 2026-10-02. Every
+system answered all 616 questions.</p>
 
 <h2>What the data showed</h2>
 <div class="findings">
@@ -191,6 +196,31 @@ examples (is this text an attack on an AI assistant?). No test question, or near
     <em>and</em> the key agree, so the student never learns a disputed answer.</p></div></div>
 </div>
 
+<h2>What the student showed</h2>
+<p>Gemma 3 1B, LoRA-trained for 9.6 minutes on a free T4 with 2,094 council-agreed answers, against
+the same model untrained. Both are exported and served identically, so the weights are the only difference.</p>
+<div class="findings">
+  <div class="finding"><div class="big">123:84</div>
+    <div><h3>Measured paired, not eyeballed</h3>
+    <p>Both students answered the same 616 questions. Only the flips count: the student got 123 right
+    that the base missed, and missed 84 the base got right. If they were equally good, that split would
+    happen by chance 0.8% of the time (exact McNemar test). The gain is +6.3 points, 95% interval +1.8 to +11.0.</p></div></div>
+  <div class="finding"><div class="big">113/116</div>
+    <div><h3>The base was crying wolf</h3>
+    <p>Untrained, it called 113 of 116 texts a prompt injection, so its 49.1% on injection was just
+    the share of attacks. Trained, it recognises 52 of 56 safe texts: injection rose to 76.7%. Security
+    knowledge barely moved (+1.4 points, p = 0.61). The fine-tune changed behaviour, not knowledge.</p></div></div>
+  <div class="finding"><div class="big">37/60</div>
+    <div><h3>The filter taught it to lean "safe"</h3>
+    <p>The agreement filter kept all 78 safe injection examples but only 37 of 50 attacks, because
+    models disagree more about attacks. Trained on 68% "safe", the student now misses 23 of 60 real
+    attacks. <em>An agreement filter is not neutral about labels.</em> Rebalancing is next.</p></div></div>
+  <div class="finding"><div class="big">−11 pts</div>
+    <div><h3>It inherits the council's blind spots</h3>
+    <p>On security questions all four members got right, the student improved (69.5% → 73.3%). Where
+    two or fewer were right, it got worse (37.1% → 25.7%). Distillation copies the mistakes too.</p></div></div>
+</div>
+
 <h2>Engineering</h2>
 <div class="eng">
   <div class="card"><h3>Four free tiers, four sets of limits</h3>
@@ -203,7 +233,7 @@ examples (is this text an attack on an AI assistant?). No test question, or near
     <p>Exact <em>and</em> near-duplicate (≥80% word overlap) removal between train and test. This
     caught a typo'd copy of a test question hiding in the training pool.</p></div>
   <div class="card"><h3>Built to be checked</h3>
-    <p>Python 3.11, pydantic v2, mypy strict, ruff, 24 offline tests. gitleaks runs pre-commit and
+    <p>Python 3.11, pydantic v2, mypy strict, ruff, 25 offline tests. gitleaks runs pre-commit and
     in CI over the full history.</p></div>
 </div>
 
@@ -213,9 +243,10 @@ examples (is this text an attack on an AI assistant?). No test question, or near
   <li><span class="done">Done</span>: every member scored alone</li>
   <li><span class="done">Done</span>: council scored, equal and weighted votes</li>
   <li><span class="done">Done</span>: training set from the council (2,094 examples from 2,500 questions)</li>
-  <li><span class="done">Ready</span>: LoRA fine-tune of Gemma 3 1B on a free GPU, with base and
-    student exported and served identically (same GGUF path, same chat template)</li>
-  <li>Next: claim 2, the student scored against its untrained base on the same 616 questions</li>
+  <li><span class="done">Done</span>: LoRA fine-tune of Gemma 3 1B on a free GPU (9.6 min), with base
+    and student exported and served identically (same GGUF path, same chat template)</li>
+  <li><span class="done">Done</span>: claim 2 scored: 60.4% → 66.7%, supported; the gain is injection detection</li>
+  <li>Next: rebalance the injection examples so the student catches attacks again</li>
 </ol>
 <p><strong>Scope, deliberately:</strong> defensive security and prompt-injection detection only. No
 offensive tooling in the training data.</p>

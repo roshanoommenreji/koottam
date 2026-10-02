@@ -8,6 +8,7 @@
   build [--limit N]            council answers on train -> data/sft.jsonl
   weights [--limit N]          learn vote weights from members' answers on train
   students                     register the notebook's two GGUFs with Ollama (Lab 02)
+  compare A B                  paired comparison of two scored systems, with significance
 """
 
 import argparse
@@ -57,6 +58,9 @@ def main() -> None:
     w = sub.add_parser("weights")
     w.add_argument("--limit", type=int, default=500)
     sub.add_parser("students")
+    c = sub.add_parser("compare")
+    c.add_argument("a")
+    c.add_argument("b")
     args = p.parse_args()
 
     if args.cmd == "prepare":
@@ -84,6 +88,10 @@ def main() -> None:
         from koottam.students import serve
 
         serve(config)
+    elif args.cmd == "compare":
+        from koottam.compare import compare
+
+        compare(config, args.a, args.b)
 
 
 if __name__ == "__main__":
